@@ -1,6 +1,9 @@
 // 𝕏 と はてなブログ への投稿。依存パッケージなし。認証情報は環境変数（GitHub Secrets）から読む。
 import { createHmac, randomBytes } from 'node:crypto';
 
+// 貼り付け時に入りがちな前後の空白・改行を取り除いた認証情報
+const clean = (env) => Object.fromEntries(Object.entries(env).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]));
+
 // ─── 𝕏（OAuth 1.0a ユーザーコンテキスト） ─────────────────────
 const enc = (s) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 
@@ -11,6 +14,7 @@ export function oauthSignature(method, url, params, consumerSecret, tokenSecret)
 }
 
 export async function postToX(text, env = process.env) {
+  env = clean(env);
   const need = ['X_API_KEY', 'X_API_SECRET', 'X_ACCESS_TOKEN', 'X_ACCESS_SECRET'];
   const missing = need.filter((k) => !env[k]);
   if (missing.length) throw new Error(`𝕏 の認証情報が未設定です: ${missing.join(', ')}`);
@@ -45,6 +49,7 @@ export function hatenaEntry(title, markdown, categories = ['手取り', '年収'
 }
 
 export async function postToHatena(title, markdown, env = process.env) {
+  env = clean(env);
   const need = ['HATENA_ID', 'HATENA_BLOG_ID', 'HATENA_API_KEY'];
   const missing = need.filter((k) => !env[k]);
   if (missing.length) throw new Error(`はてなブログの認証情報が未設定です: ${missing.join(', ')}`);
@@ -85,6 +90,7 @@ export function blueskyRecord(text, now = new Date()) {
 }
 
 export async function postToBluesky(text, env = process.env) {
+  env = clean(env);
   const missing = ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'].filter((k) => !env[k]);
   if (missing.length) throw new Error(`Bluesky の認証情報が未設定です: ${missing.join(', ')}`);
   if (graphemes(text) > 300) throw new Error(`Bluesky の文字数オーバー（${graphemes(text)}/300）`);
