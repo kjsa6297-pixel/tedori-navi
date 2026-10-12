@@ -1,0 +1,35 @@
+name: 制度改正チェックのリマインド
+
+# 税率・保険料率が変わる時期に、確認用の Issue を自動で作る
+on:
+  schedule:
+    - cron: '0 0 5 1 *'  # 1月5日（税制改正大綱の確定後）
+    - cron: '0 0 1 3 *'  # 3月1日（協会けんぽ料率は3月分から改定）
+    - cron: '0 0 1 4 *'  # 4月1日（雇用保険料率は4月から改定）
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cat > body.md <<'BODY'
+          src/tax.js の RULES と各表が最新か確認してください。
+
+          - [ ] 協会けんぽ 健康保険料率（東京）・介護保険料率・子ども・子育て支援金率
+          - [ ] 厚生年金保険料率・標準報酬月額の等級
+          - [ ] 雇用保険料率（労働者負担・一般の事業）
+          - [ ] 所得税：給与所得控除・基礎控除・税率（税制改正大綱）
+          - [ ] 住民税：給与所得控除・基礎控除・均等割
+          - [ ] test/tax.test.mjs の期待値を新しい制度で計算し直す
+          - [ ] RULES.label / RULES.updated を更新
+
+          Claude Code に「この Issue の内容で制度を更新して」と頼むこともできます。
+          BODY
+          gh issue create --title "制度改正の確認（$(date +%Y-%m)）" --body-file body.md
