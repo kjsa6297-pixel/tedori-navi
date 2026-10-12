@@ -2,7 +2,7 @@
 // サイト全体を dist/ に生成する。依存パッケージなし。
 //   node scripts/build.mjs
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, cpSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { calcTakeHome, RULES, yen, man } from '../src/tax.js';
@@ -234,6 +234,7 @@ function layout({ title, description, path, body, head = '', sticky = '' }) {
 <meta property="og:site_name" content="${esc(config.siteName)}">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%B4%3C/text%3E%3C/svg%3E">
+${config.googleSiteVerification ? `<meta name="google-site-verification" content="${esc(config.googleSiteVerification)}">` : ''}
 ${gaHead}
 ${adHead}
 ${head}
@@ -729,6 +730,8 @@ rmSync(DIST, { recursive: true, force: true });
 mkdirSync(join(DIST, 'assets'), { recursive: true });
 copyFileSync(join(ROOT, 'src/tax.js'), join(DIST, 'assets/tax.js'));
 copyFileSync(join(ROOT, 'src/view.js'), join(DIST, 'assets/view.js'));
+// static/ のファイル（Search Console の確認用ファイルなど）はそのまま公開する
+if (existsSync(join(ROOT, 'static'))) cpSync(join(ROOT, 'static'), DIST, { recursive: true });
 
 write('index.html', indexPage());
 write('nenshu/index.html', nenshuIndex());
