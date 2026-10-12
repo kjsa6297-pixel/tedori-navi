@@ -18,7 +18,7 @@
 ### 2. 中身を増やす（1〜3か月）
 - [x] 宣伝の自動化（𝕏・はてなブログ、note は貼り付け用の下書き）を実装。最初の2週間は Issue で確認（docs/PROMO.md）
 - [x] はてなブログの認証情報を登録し、自動投稿を実際に確認（https://kou-kj.hatenablog.com）
-- [ ] Bluesky（ハンドル・アプリパスワード）を GitHub Secrets に登録（オーナー）。𝕏 は無料のタップ投稿リンクで運用（API は任意）
+- [x] Bluesky を登録し、自動投稿を実際に確認（https://bsky.app/profile/kj6060.bsky.social）。𝕏 は無料のタップ投稿リンクで運用（API は任意）
 - [ ] 2週間確認したら `promo.auto` を true に（オーナーの合図で Claude）
 - [ ] Search Console の検索クエリを月1〜2回共有 → 次に作るページを決める
 - [ ] GA4 の `next_click` イベント（どの「次に知りたいこと」が押されたか）で `nextOrder` を並べ替える
@@ -45,3 +45,4 @@
 - 2026-10-12: 𝕏 を無料で運用できるよう、投稿案に「タップで投稿」リンク（x.com/intent/post）を追加。API 未設定なら自動モードでもリンク付き Issue にする
 - 2026-10-12: Bluesky への自動投稿を追加（AT Protocol、リンク・タグの facet とリンクカード）。facet の位置は1年分テスト済み。実際の投稿は認証情報の登録待ち
 - 2026-10-12: はてなブログへの投稿を実地で確認（初回は認証情報の前後の空白で401 → 前後の空白を取り除く処理を追加して成功）。記事：https://kou-kj.hatenablog.com/entry/2026/10/12/234106
+- 2026-10-12: Bluesky への投稿を実地で確認：https://bsky.app/profile/kj6060.bsky.social/post/3mxor5gzrmx2q 。確認モードは2026-10-26ごろまで（その後オーナーの合図で promo.auto を true に）
