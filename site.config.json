@@ -20,8 +20,10 @@
   "nextOrder": [
     "rent",
     "up",
+    "avg",
     "family",
     "furusato",
     "ideco"
-  ]
+  ],
+  "operator": "手取りナビ編集部"
 }

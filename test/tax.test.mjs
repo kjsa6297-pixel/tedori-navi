@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calcTakeHome, healthStandard, pensionStandard } from '../src/tax.js';
+import { calcTakeHome, healthStandard, pensionStandard, PREF_HEALTH } from '../src/tax.js';
 
 // 期待値は制度の計算手順に沿って手計算したもの（計算過程をコメントに残す）
 
@@ -71,4 +71,31 @@ test('年収200万〜2000万円の10万円刻みで、年収が増えれば手�
     assert.ok(t > prev, `${i}: ${t} <= ${prev}`);
     prev = t;
   }
+});
+
+test('年収500万円（うち賞与100万円）', () => {
+  const r = calcTakeHome({ income: 5000000, bonus: 1000000 });
+  // 月給33.3万 → 標準報酬34万。健保 340,000×5.04%=17,136/月、賞与50万×2回 25,200×2
+  assert.equal(r.health, 17136 * 12 + 50400);
+  // 厚年 340,000×9.15%=31,110/月、賞与 45,750×2
+  assert.equal(r.pension, 31110 * 12 + 91500);
+  // 所得税: 356万-745,852-104万 → 1,774,000 ×5% ×1.021 → 90,500
+  assert.equal(r.incomeTax, 90500);
+  // 住民税: 356万-745,852-43万 → 2,384,000 ×10% -2,500 +5,000
+  assert.equal(r.residentTax, 240900);
+  assert.equal(r.takeHome, 3922748);
+});
+
+test('賞与の標準賞与額の上限（厚生年金は1回150万円）', () => {
+  const r = calcTakeHome({ income: 20000000, bonus: 6000000 });
+  // 1回300万円 → 厚年は150万円で計算: 1,500,000×9.15%=137,250 ×2回
+  const monthlyPart = Math.round(650000 * 0.183 / 2) * 12;
+  assert.equal(r.pension, monthlyPart + 137250 * 2);
+});
+
+test('都道府県別の健康保険料率（大阪府 10.13%）', () => {
+  const r = calcTakeHome({ income: 5000000, pref: '大阪府' });
+  // 410,000 × (10.13%+0.23%) ÷ 2 = 21,238/月
+  assert.equal(r.health, 21238 * 12);
+  assert.equal(Object.keys(PREF_HEALTH).length, 47);
 });

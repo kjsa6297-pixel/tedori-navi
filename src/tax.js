@@ -2,15 +2,15 @@
 // ブラウザと Node の両方で使う純粋関数のみ。制度が変わったら RULES と各表を更新する。
 //
 // 前提:
-// - 給与収入のみ。賞与なし（月給 = 年収 ÷ 12）として標準報酬月額を決める
-// - 健康保険は協会けんぽ東京支部、雇用保険は一般の事業
+// - 給与収入のみ。月給 =（年収 − 賞与）÷ 12 として標準報酬月額を決める。賞与は年2回・同額で支給
+// - 健康保険は協会けんぽ（都道府県別の料率、既定は東京都）、雇用保険は一般の事業
 // - 所得税は令和8年分。住民税は同じ所得に対して課税される額（実際の納付は翌年度）
 // - 配偶者は収入なし、扶養親族は16歳以上の一般扶養親族
 
 export const RULES = {
   label: '2026年（令和8年）',
   updated: '2026-10-12',
-  healthRate: 0.0985, // 協会けんぽ東京 令和8年度
+  healthRate: 0.0985, // 協会けんぽ東京 令和8年度（既定値）
   kaigoRate: 0.0162, // 介護保険（40〜64歳）令和8年度
   kodomoRate: 0.0023, // 子ども・子育て支援金 令和8年4月分〜
   pensionRate: 0.183, // 厚生年金
@@ -18,6 +18,21 @@ export const RULES = {
   residentRate: 0.1,
   residentPerCapita: 5000, // 均等割（森林環境税 1,000円含む）
 };
+
+// 協会けんぽ 令和8年度 都道府県別の健康保険料率（介護保険・支援金を除く、労使合計）
+export const PREF_HEALTH = {
+  北海道: 0.1028, 青森県: 0.0985, 岩手県: 0.0951, 宮城県: 0.1010, 秋田県: 0.1001, 山形県: 0.0975, 福島県: 0.0950,
+  茨城県: 0.0952, 栃木県: 0.0982, 群馬県: 0.0968, 埼玉県: 0.0967, 千葉県: 0.0973, 東京都: 0.0985, 神奈川県: 0.0992,
+  新潟県: 0.0921, 富山県: 0.0959, 石川県: 0.0970, 福井県: 0.0971, 山梨県: 0.0955, 長野県: 0.0963, 岐阜県: 0.0980,
+  静岡県: 0.0961, 愛知県: 0.0993, 三重県: 0.0977, 滋賀県: 0.0988, 京都府: 0.0989, 大阪府: 0.1013, 兵庫県: 0.1012,
+  奈良県: 0.0991, 和歌山県: 0.1006, 鳥取県: 0.0986, 島根県: 0.0994, 岡山県: 0.1005, 広島県: 0.0978, 山口県: 0.1015,
+  徳島県: 0.1024, 香川県: 0.1002, 愛媛県: 0.0998, 高知県: 0.1005, 福岡県: 0.1011, 佐賀県: 0.1055, 長崎県: 0.1006,
+  熊本県: 0.1008, 大分県: 0.1008, 宮崎県: 0.0977, 鹿児島県: 0.1013, 沖縄県: 0.0944,
+};
+
+// 賞与の標準賞与額の上限
+const HEALTH_BONUS_CAP_YEAR = 5730000; // 健康保険：年度累計
+const PENSION_BONUS_CAP_EACH = 1500000; // 厚生年金：1回あたり
 
 // 健康保険の標準報酬月額 [標準報酬, この金額未満]
 const HEALTH_GRADES = [
@@ -106,16 +121,22 @@ const floor1000 = (n) => Math.max(0, Math.floor(n / 1000) * 1000);
  * @param {boolean} [p.spouse] 配偶者控除（配偶者の収入なし）
  * @param {number} [p.dependents] 16歳以上の扶養親族の人数
  */
-export function calcTakeHome({ income, over40 = false, spouse = false, dependents = 0 }) {
+export function calcTakeHome({ income, bonus = 0, pref = '東京都', over40 = false, spouse = false, dependents = 0 }) {
   income = Math.max(0, Math.round(income));
-  const monthly = income / 12;
+  bonus = Math.min(income, Math.max(0, Math.round(bonus)));
+  const monthly = (income - bonus) / 12;
+  const healthRate = (PREF_HEALTH[pref] ?? RULES.healthRate) + RULES.kodomoRate + (over40 ? RULES.kaigoRate : 0);
+  // 賞与は年2回・同額。標準賞与額は1,000円未満切り捨て
+  const bonusEach = Math.floor(bonus / 2 / 1000) * 1000;
 
   // 社会保険料（本人負担）
   const healthStd = healthStandard(monthly);
-  const healthMonthly = Math.round(healthStd * (RULES.healthRate + RULES.kodomoRate + (over40 ? RULES.kaigoRate : 0)) / 2);
+  const healthMonthly = Math.round(healthStd * healthRate / 2);
   const pensionMonthly = Math.round(pensionStandard(monthly) * RULES.pensionRate / 2);
-  const health = healthMonthly * 12;
-  const pension = pensionMonthly * 12;
+  const healthBonus = bonusEach ? Math.round(Math.min(bonusEach * 2, HEALTH_BONUS_CAP_YEAR) * healthRate / 2) : 0;
+  const pensionBonus = Math.round(Math.min(bonusEach, PENSION_BONUS_CAP_EACH) * RULES.pensionRate / 2) * 2;
+  const health = healthMonthly * 12 + healthBonus;
+  const pension = pensionMonthly * 12 + pensionBonus;
   const koyou = Math.round(income * RULES.koyouRate);
   const social = health + pension + koyou;
 

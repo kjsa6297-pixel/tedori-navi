@@ -1,5 +1,14 @@
 // 画面部品（HTML文字列を返す）。ビルド時（Node）と計算ツール（ブラウザ）の両方で使う。
-import { calcTakeHome, deductionValue, yen, man } from './tax.js';
+import { calcTakeHome, deductionValue, PREF_HEALTH, yen, man } from './tax.js';
+
+// 国税庁「令和7年分 民間給与実態統計調査」1年を通じて勤務した給与所得者の平均給与（万円）
+export const AVERAGES = {
+  source: '国税庁「令和7年分 民間給与実態統計調査」',
+  sourceUrl: 'https://www.nta.go.jp/publication/statistics/kokuzeicho/minkan/gaiyou/2025.htm',
+  rows: [['全体の平均', 487], ['男性の平均', 597], ['女性の平均', 342], ['正社員の平均', 559]],
+  mode: '300万円超400万円以下', // 最も人数が多い層（全体）
+};
+export const PREFS = Object.keys(PREF_HEALTH);
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const pct = (x, d = 1) => (x * 100).toFixed(d);
@@ -13,12 +22,12 @@ export const SERIES = [
 ];
 
 // ─── 結果のヒーロー ─────────────────────────────────────────
-export function hero(n, r) {
+export function hero(n, r, opt = {}) {
   return `
 <section class="hero">
   <div class="hero-label">年収${n.toLocaleString('ja-JP')}万円の手取り</div>
-  <div class="hero-main"><span class="hero-k">月</span><span class="hero-v">${man(r.takeHomeMonthly)}</span><span class="hero-u">万円</span></div>
-  <div class="hero-sub">年 <strong>${man(r.takeHome)}万円</strong>　・　手取り率 <strong>${pct(r.rate)}%</strong></div>
+  <div class="hero-main"><span class="hero-k">${opt.bonus ? '月平均' : '月'}</span><span class="hero-v">${man(r.takeHomeMonthly)}</span><span class="hero-u">万円</span></div>
+  <div class="hero-sub">年 <strong>${man(r.takeHome)}万円</strong>　・　手取り率 <strong>${pct(r.rate)}%</strong>${opt.bonus ? '<br><small>月平均はボーナス分を12か月で割った額です</small>' : ''}</div>
   ${splitBar(r)}
 </section>`;
 }
@@ -48,6 +57,7 @@ export function nextItems(n, r, opt = {}) {
     family: { icon: '👪', q: '結婚・扶養で変わる？', a: opt.spouse ? '条件別に比較' : `手取り+${man(married.takeHome - r.takeHome)}万円`, href: '#family' },
     furusato: { icon: '🎁', q: 'ふるさと納税はいくらまで？', a: r.furusato ? `約${man(r.furusato)}万円` : '対象外', href: '#save' },
     ideco: { icon: '🐷', q: 'iDeCoでいくら節税？', a: `年${man(ideco)}万円`, href: '#save' },
+    avg: { icon: '📊', q: '平均年収と比べると？', a: `${n >= AVERAGES.rows[0][1] ? '+' : '−'}${Math.abs(n - AVERAGES.rows[0][1]).toLocaleString('ja-JP')}万円`, href: '#avg' },
   };
 }
 
@@ -120,13 +130,7 @@ export function lineChart(n, opt = {}) {
 }
 
 // ─── 家族構成・年齢による違い ─────────────────────────────────
-export function familyBars(n) {
-  const rows = [
-    ['独身・40歳未満', calc(n)],
-    ['独身・40歳以上', calc(n, { over40: true })],
-    ['配偶者を扶養', calc(n, { spouse: true })],
-    ['配偶者＋子1人（16歳以上）', calc(n, { spouse: true, dependents: 1 })],
-  ];
+function diffBars(rows, noteText) {
   const base = rows[0][1].takeHome;
   const maxDiff = Math.max(1, ...rows.map(([, r]) => Math.abs(r.takeHome - base)));
   return `
@@ -137,7 +141,40 @@ ${rows.map(([k, r]) => {
     const bar = diff ? `<span class="${diff > 0 ? 'pos' : 'neg'}" style="width:${w}%"></span>` : '';
     return `<div class="hb-row"><div class="hb-k">${k}</div><div class="hb-bar">${bar}</div><div class="hb-v"><b>${diff ? `${diff > 0 ? '+' : '−'}${man(Math.abs(diff))}万` : '基準'}</b><small>年${man(r.takeHome)}万</small></div></div>`;
   }).join('')}
-<p class="note"><i class="sw sw-fill"></i>手取りが増える　<i class="sw sw-neg"></i>手取りが減る（独身・40歳未満との差、年額）</p>
+<p class="note"><i class="sw sw-fill"></i>手取りが増える　<i class="sw sw-neg"></i>手取りが減る（${noteText}）</p>
+</div>`;
+}
+
+export function familyBars(n, opt = {}) {
+  return diffBars([
+    ['独身・40歳未満', calc(n, { ...opt, over40: false, spouse: false, dependents: 0 })],
+    ['独身・40歳以上', calc(n, { ...opt, over40: true, spouse: false, dependents: 0 })],
+    ['配偶者を扶養', calc(n, { ...opt, over40: false, spouse: true, dependents: 0 })],
+    ['配偶者＋子1人（16歳以上）', calc(n, { ...opt, over40: false, spouse: true, dependents: 1 })],
+  ], '独身・40歳未満との差、年額');
+}
+
+// 住んでいる地域（健康保険料率）とボーナスの有無による違い
+export function conditionBars(n) {
+  const rates = Object.entries(PREF_HEALTH).sort((a, b) => a[1] - b[1]);
+  const [lowPref] = rates[0];
+  const [highPref] = rates[rates.length - 1];
+  return diffBars([
+    ['東京都・ボーナスなし', calc(n)],
+    [`${lowPref}（料率が最も低い）`, calc(n, { pref: lowPref })],
+    [`${highPref}（料率が最も高い）`, calc(n, { pref: highPref })],
+    ['ボーナスあり（年4か月分）', calc(n, { bonus: n * 10000 * 4 / 16 })],
+  ], '東京都・ボーナスなしとの差、年額');
+}
+
+// 平均年収との比較（0から描く棒）
+export function avgBars(n) {
+  const rows = [['あなた', n, true], ...AVERAGES.rows];
+  const max = Math.max(...rows.map((r) => r[1]));
+  return `
+<div class="hbars">
+${rows.map(([k, v, me]) => `<div class="hb-row avg"><div class="hb-k">${me ? '<b>あなた</b>' : k}</div><div class="hb-bar"><span class="${me ? 'me' : 'base'}" style="width:${(v / max) * 100}%"></span></div><div class="hb-v"><b>${v.toLocaleString('ja-JP')}万</b>${me ? '' : `<small>${n >= v ? '+' : '−'}${Math.abs(n - v).toLocaleString('ja-JP')}万</small>`}</div></div>`).join('')}
+<p class="note">額面の年収で比較。出典：<a href="${AVERAGES.sourceUrl}" rel="noopener">${AVERAGES.source}</a>（1年を通じて勤務した給与所得者）。最も人数が多いのは年収${AVERAGES.mode}の層です。</p>
 </div>`;
 }
 

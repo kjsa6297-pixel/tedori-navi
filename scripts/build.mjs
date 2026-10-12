@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from 'no
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { calcTakeHome, RULES, yen, man } from '../src/tax.js';
-import { hero, nextItems, nextCards, lifeTiles, upBars, lineChart, familyBars, saveTiles } from '../src/view.js';
+import { hero, nextItems, nextCards, lifeTiles, upBars, lineChart, familyBars, conditionBars, avgBars, saveTiles, PREFS, AVERAGES } from '../src/view.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -188,6 +188,27 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
 .seg select{font-size:14px;background:transparent;color:var(--text);border:0}
 .ad{margin:28px 0;min-height:100px}
+ul.points{list-style:none;display:grid;gap:8px;margin:8px 0}
+ul.points li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px}
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin:14px 0}
+.toc-h{font-weight:700;font-size:14px;color:var(--sub)}
+.toc ol{padding-left:20px;font-size:14px}
+.hb-row.avg .hb-bar::before{display:none}
+.hb-bar .base{left:0;background:var(--gross);border-radius:0 4px 4px 0}
+.hb-bar .me{left:0;background:var(--s1);border-radius:0 4px 4px 0}
+form.calc input.sub{font-size:20px;padding:6px 12px}
+form.calc select.full{width:100%;font-size:16px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.seg.mode label{font-weight:700}
+.offers{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.offers{grid-template-columns:1fr}}
+fieldset.offer{border:1px solid var(--line);border-radius:14px;padding:10px 12px 12px;display:grid;gap:6px}
+fieldset.offer legend{font-weight:800;padding:0 6px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media (max-width:560px){.cmp{grid-template-columns:1fr}}
+.cmp-col{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px}
+.cmp-h{font-weight:800}
+.cmp-v{font-size:30px;font-weight:900;line-height:1.3}
+.cmp-s{font-size:13px;color:var(--sub);margin-bottom:10px}
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center;padding:24px 16px 100px}
 footer a{color:var(--muted)}
 `;
@@ -221,7 +242,7 @@ ${head}
 <body>
 <header class="top"><div>
 <a class="logo" href="${SITE}/">💴 手取り<b>ナビ</b></a>
-<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">早見表</a><a href="${SITE}/kabe.html">手取りの壁</a></nav>
+<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">早見表</a><a href="${SITE}/hikaku.html">2社比較</a><a href="${SITE}/kabe.html">手取りの壁</a></nav>
 </div></header>
 <main>
 ${body}
@@ -230,7 +251,8 @@ ${sticky ? `<div class="sticky"><div>${sticky}</div></div>` : ''}
 <footer>
 <p>${RULES.label}の制度で計算した概算です。実際の金額は勤務先や自治体、賞与の有無などで変わります。</p>
 ${hasAffiliate ? '<p>当サイトはアフィリエイトプログラムを利用しています（PR表記のリンク）。</p>' : ''}
-<p><a href="${SITE}/about.html">計算方法と前提</a>　<a href="${SITE}/privacy.html">プライバシーポリシー</a></p>
+<p>最終更新：${RULES.updated}　出典：国税庁・協会けんぽ・厚生労働省・日本年金機構・総務省（<a href="${SITE}/about.html#sources">一覧</a>）</p>
+<p><a href="${SITE}/about.html">計算方法と前提</a>　<a href="${SITE}/operator.html">運営者情報</a>　<a href="${SITE}/privacy.html">プライバシーポリシー</a></p>
 <p>© ${esc(config.siteName)}</p>
 </footer>
 <script type="module">import { attachCharts, trackNext } from '${SITE}/assets/view.js'; attachCharts(); trackNext();</script>
@@ -316,7 +338,7 @@ const WALLS = [
 });
 
 // ─── 年収別ページ ──────────────────────────────────────────
-const NEXT_ORDER = config.nextOrder || ['rent', 'up', 'family', 'furusato', 'ideco'];
+const NEXT_ORDER = config.nextOrder || ['rent', 'up', 'avg', 'family', 'furusato', 'ideco'];
 const pageLink = (n) => (hasPage(n) ? `${SITE}/nenshu/${n}.html` : null);
 
 // 年収n万円の少し先にある「手取りの壁」（独身の場合）
@@ -369,9 +391,17 @@ ${cta('career')}
 <p class="h2-sub">年収が上がるほど、引かれる割合が大きくなります。グラフをなぞると各年収の手取りが見られます。</p>
 ${lineChart(n)}
 
+<h2 id="avg">平均年収と比べると</h2>
+<p class="h2-sub">年収${n}万円は、給与所得者全体の平均（${AVERAGES.rows[0][1]}万円）より${n >= AVERAGES.rows[0][1] ? `${n - AVERAGES.rows[0][1]}万円高い` : `${AVERAGES.rows[0][1] - n}万円低い`}水準です。</p>
+${avgBars(n)}
+
 <h2 id="family">結婚・扶養・年齢で変わる？</h2>
 <p class="h2-sub">配偶者（収入なし）を扶養すると税金が減り、40歳からは介護保険料が加わります。</p>
 ${familyBars(n)}
+
+<h2 id="area">住んでいる地域・ボーナスで変わる？</h2>
+<p class="h2-sub">健康保険料率は都道府県ごとに違います。ボーナスがあると、同じ年収でも社会保険料が少し変わります。</p>
+${conditionBars(n)}
 
 <h2 id="save">税金を減らす方法</h2>
 <p class="h2-sub">年収${n}万円の人が使える代表的な2つ</p>
@@ -408,18 +438,36 @@ ${[[n - 50, '−50万円'], [n + 50, '+50万円'], [n - 10, '−10万円'], [n +
   });
 }
 
+// ─── 入力フォームの部品（計算ツール・内定比較で共通） ─────────
+const prefOptions = (sel = '東京都') => PREFS.map((p) => `<option${p === sel ? ' selected' : ''}>${p}</option>`).join('');
+
 // ─── トップ（計算ツール） ──────────────────────────────────
 function indexPage() {
   const popular = [300, 400, 500, 600, 700, 800, 1000, 1200, 1500];
   const ctas = { furusato: cta('furusato'), ideco: cta('ideco') };
   const body = `
 <h1>手取り計算ツール【${RULES.label}】</h1>
-<p class="lead">年収を入れるだけ。手取り・家賃の目安・年収アップで増える額・節税額までひと目でわかります。入力内容は送信されません。</p>
+<p class="lead">年収か月給を入れるだけ。手取り・家賃の目安・年収アップで増える額・平均との比較・節税額までひと目でわかります。入力内容は送信されません。</p>
 <form class="calc" id="calc" onsubmit="return false">
-  <label class="big" for="income">年収（額面）</label>
-  <div class="inrow"><input id="income" type="number" inputmode="numeric" min="100" max="5000" step="10" value="500"><span>万円</span></div>
-  <input id="slider" type="range" min="100" max="2500" step="10" value="500" aria-label="年収スライダー">
+  <div class="seg mode">
+    <label><input type="radio" name="mode" value="year" checked>年収で入力</label>
+    <label><input type="radio" name="mode" value="month">月給で入力</label>
+  </div>
+  <div id="f-year">
+    <label class="big" for="income">年収（額面・ボーナス込み）</label>
+    <div class="inrow"><input id="income" type="number" inputmode="numeric" min="100" max="5000" step="10" value="500"><span>万円</span></div>
+    <input id="slider" type="range" min="100" max="2500" step="10" value="500" aria-label="年収スライダー">
+  </div>
+  <div id="f-month" hidden>
+    <label class="big" for="monthly">月給（額面・手当込み）</label>
+    <div class="inrow"><input id="monthly" type="number" inputmode="decimal" min="5" max="400" step="0.5" value="35"><span>万円</span></div>
+  </div>
+  <div>
+    <label class="big" for="bonus">ボーナス（年間の合計）</label>
+    <div class="inrow"><input id="bonus" class="sub" type="number" inputmode="decimal" min="0" max="3000" step="1" value="0"><span>万円</span></div>
+  </div>
   <div class="seg">
+    <label>📍<select id="pref" aria-label="都道府県">${prefOptions()}</select></label>
     <label><input id="over40" type="checkbox">40〜64歳</label>
     <label><input id="spouse" type="checkbox">配偶者を扶養</label>
     <label>扶養（16歳以上）<select id="dependents"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select>人</label>
@@ -427,6 +475,10 @@ function indexPage() {
 </form>
 <div id="out" aria-live="polite"></div>
 ${adSlot()}
+<div class="related" style="margin-top:24px">
+<a href="${SITE}/hikaku.html">転職・内定で迷ったら<b>2社の手取りを比べる →</b></a>
+<a href="${SITE}/kabe.html">2026年の手取りの壁<b>損する年収は？ →</b></a>
+</div>
 <h2>よく見られている年収</h2>
 <p class="h2-sub">年収ごとの詳しい解説ページ</p>
 <div class="chips">${popular.map((n) => `<a href="${SITE}/nenshu/${n}.html">年収${n}万円</a>`).join('')}<a href="${SITE}/nenshu/">早見表 →</a></div>
@@ -435,41 +487,119 @@ ${adSlot()}
 <div class="callout info"><span class="ci">🧾</span><div>2026年4月分から「子ども・子育て支援金」が健康保険料に上乗せされています。</div></div>
 <script type="module">
 import { calcTakeHome } from './assets/tax.js';
-import { hero, nextItems, nextCards, lifeTiles, upBars, lineChart, familyBars, saveTiles, attachCharts } from './assets/view.js';
+import { hero, nextItems, nextCards, lifeTiles, upBars, lineChart, familyBars, avgBars, saveTiles, attachCharts } from './assets/view.js';
 const ORDER = ${JSON.stringify(NEXT_ORDER)};
 const CTA = ${JSON.stringify(ctas)};
 const PAGE = { min: ${PAGE_MIN}, max: ${PAGE_MAX}, step: ${PAGE_STEP} };
 const $ = (id) => document.getElementById(id);
 const q = new URLSearchParams(location.search);
-if (q.get('income')) $('income').value = q.get('income');
+for (const k of ['income', 'monthly', 'bonus', 'pref']) if (q.get(k)) $(k).value = q.get(k);
+if (q.get('mode') === 'month') document.querySelector('[name=mode][value=month]').checked = true;
 const hasPage = (n) => Number.isInteger(n) && n >= PAGE.min && n <= PAGE.max && n % PAGE.step === 0;
+const num = (id) => Math.max(0, parseFloat($(id).value) || 0);
 let timer;
 function render() {
-  const n = Math.min(5000, Math.max(0, Math.round(parseFloat($('income').value) || 0)));
-  $('slider').value = Math.min(2500, n);
-  const opt = { over40: $('over40').checked, spouse: $('spouse').checked, dependents: +$('dependents').value };
+  const mode = document.querySelector('[name=mode]:checked').value;
+  $('f-year').hidden = mode !== 'year';
+  $('f-month').hidden = mode !== 'month';
+  const bonus = Math.min(3000, num('bonus'));
+  let n = mode === 'month' ? Math.round((num('monthly') * 12 + bonus) * 10) / 10 : Math.min(5000, num('income'));
+  if (mode === 'year') $('slider').value = Math.min(2500, n);
+  const opt = { bonus: Math.min(bonus, n) * 10000, pref: $('pref').value, over40: $('over40').checked, spouse: $('spouse').checked, dependents: +$('dependents').value };
   if (n < 100) { $('out').innerHTML = '<div class="callout"><span class="ci">ℹ️</span><div>年収100万円以上で計算できます。</div></div>'; return; }
   const r = calcTakeHome({ income: n * 10000, ...opt });
-  const up50 = calcTakeHome({ income: (n + 50) * 10000, ...opt });
-  $('out').innerHTML = hero(n, r) + nextCards(nextItems(n, r, opt), ORDER) +
+  const up = calcTakeHome({ income: (n + 50) * 10000, ...opt });
+  const nInt = Math.round(n);
+  $('out').innerHTML = hero(n, r, opt) + nextCards(nextItems(n, r, opt), ORDER) +
     '<h2 id="life">暮らしの目安</h2>' + lifeTiles(r) +
-    '<h2 id="up">年収が上がると、手取りはいくら増える？</h2><p class="h2-sub">あと50万円で手取りは<strong>+' + ((up50.takeHome - r.takeHome) / 10000).toFixed(1) + '万円</strong></p>' + upBars(n, r, opt, (m) => hasPage(m) ? 'nenshu/' + m + '.html' : null) +
+    '<h2 id="up">年収が上がると、手取りはいくら増える？</h2><p class="h2-sub">あと50万円で手取りは<strong>+' + ((up.takeHome - r.takeHome) / 10000).toFixed(1) + '万円</strong></p>' + upBars(n, r, opt, (m) => hasPage(m) && !opt.bonus ? 'nenshu/' + m + '.html' : null) +
     '<h2>年収と手取りの関係</h2><p class="h2-sub">グラフをなぞると各年収の手取りが見られます</p>' + lineChart(n, opt) +
-    '<h2 id="family">結婚・扶養・年齢で変わる？</h2>' + familyBars(n) +
+    '<h2 id="avg">平均年収と比べると</h2>' + avgBars(nInt) +
+    '<h2 id="family">結婚・扶養・年齢で変わる？</h2>' + familyBars(n, { bonus: opt.bonus, pref: opt.pref }) +
     '<h2 id="save">税金を減らす方法</h2>' + saveTiles(r, CTA.furusato, CTA.ideco) +
-    (hasPage(n) ? '<div class="related" style="margin-top:20px"><a href="nenshu/' + n + '.html">年収' + n + '万円の詳しい解説<b>内訳・ポイントを見る →</b></a></div>' : '');
+    (hasPage(nInt) ? '<div class="related" style="margin-top:20px"><a href="nenshu/' + nInt + '.html">年収' + nInt + '万円の詳しい解説<b>内訳・ポイントを見る →</b></a></div>' : '');
   attachCharts($('out'));
   clearTimeout(timer);
-  timer = setTimeout(() => history.replaceState(null, '', '?income=' + n), 300);
+  const p = new URLSearchParams(mode === 'month' ? { mode, monthly: num('monthly') } : { income: n });
+  if (bonus) p.set('bonus', bonus);
+  if (opt.pref !== '東京都') p.set('pref', opt.pref);
+  timer = setTimeout(() => history.replaceState(null, '', '?' + p), 300);
 }
 $('slider').addEventListener('input', () => { $('income').value = $('slider').value; render(); });
-['income', 'over40', 'spouse', 'dependents'].forEach((id) => $(id).addEventListener('input', render));
+document.querySelectorAll('#calc input, #calc select').forEach((el) => el.addEventListener('input', render));
 render();
 </script>`;
   return layout({
-    title: `手取り計算ツール【${RULES.label}対応】年収から手取り・家賃の目安・節税額まで｜${config.siteName}`,
-    description: `年収を入れるだけで手取り額、家賃の目安、年収アップで増える手取り、結婚・扶養での違い、ふるさと納税・iDeCoの節税額がひと目でわかる無料ツール。${RULES.label}の基礎控除引き上げ・子ども・子育て支援金に対応。`,
+    title: `手取り計算ツール【${RULES.label}対応】年収・月給・ボーナスから手取りを計算｜${config.siteName}`,
+    description: `年収か月給・ボーナスを入れるだけで手取り額、家賃の目安、年収アップで増える手取り、平均年収との比較、ふるさと納税・iDeCoの節税額がひと目でわかる無料ツール。47都道府県の健康保険料率と${RULES.label}の基礎控除引き上げに対応。`,
     path: '', body,
+  });
+}
+
+// ─── 内定・オファー比較 ────────────────────────────────────
+function hikakuPage() {
+  const offer = (id, label, m, b) => `
+  <fieldset class="offer">
+    <legend>${label}</legend>
+    <label class="big" for="${id}m">月給（手当込み）</label>
+    <div class="inrow"><input id="${id}m" type="number" inputmode="decimal" min="5" max="400" step="0.5" value="${m}"><span>万円</span></div>
+    <label class="big" for="${id}b">ボーナス（年間）</label>
+    <div class="inrow"><input id="${id}b" class="sub" type="number" inputmode="decimal" min="0" max="3000" step="1" value="${b}"><span>万円</span></div>
+    <label class="big" for="${id}p">勤務地</label>
+    <select id="${id}p" class="full">${prefOptions()}</select>
+  </fieldset>`;
+  const body = `
+<div class="crumb"><a href="${SITE}/">手取りナビ</a> › 内定・オファー比較</div>
+<h1>2社の手取りを比べる【内定・転職オファー比較】</h1>
+<p class="lead">提示された月給とボーナスを入れると、手元に残るお金の差がわかります。額面の差より、手取りの差は小さくなります。</p>
+<form class="calc" id="cmp" onsubmit="return false">
+  <div class="offers">${offer('a', '🅰 今の会社・A社', 30, 100)}${offer('b', '🅱 B社', 33, 80)}</div>
+  <div class="seg">
+    <label><input id="over40" type="checkbox">40〜64歳</label>
+    <label><input id="spouse" type="checkbox">配偶者を扶養</label>
+    <label>扶養（16歳以上）<select id="dependents"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select>人</label>
+  </div>
+</form>
+<div id="out" aria-live="polite"></div>
+<div class="callout info"><span class="ci">💡</span><div>手取り以外にも、残業代の有無、住宅手当・退職金・企業年金、通勤時間、昇給のペースで実質的な待遇は変わります。迷ったら、それぞれ「年いくら」に換算して足し引きするのがおすすめです。</div></div>
+${cta('career')}
+${adSlot()}
+<script type="module">
+import { calcTakeHome, man } from './assets/tax.js';
+import { splitBar } from './assets/view.js';
+const $ = (id) => document.getElementById(id);
+const num = (id) => Math.max(0, parseFloat($(id).value) || 0);
+function get(id) {
+  const m = num(id + 'm'), b = num(id + 'b');
+  const opt = { pref: $(id + 'p').value, over40: $('over40').checked, spouse: $('spouse').checked, dependents: +$('dependents').value };
+  const income = (m * 12 + b) * 10000;
+  return { income, r: calcTakeHome({ income, bonus: b * 10000, ...opt }) };
+}
+function render() {
+  const A = get('a'), B = get('b');
+  if (A.income < 1000000 || B.income < 1000000) { $('out').innerHTML = '<div class="callout"><span class="ci">ℹ️</span><div>年収100万円以上で比較できます。</div></div>'; return; }
+  const gross = B.income - A.income, take = B.r.takeHome - A.r.takeHome;
+  const better = take === 0 ? '手取りは同じです' : (take > 0 ? 'B社' : 'A社') + 'の方が手取りが多い';
+  const sign = (v) => (v >= 0 ? '+' : '−') + man(Math.abs(v)) + '万円';
+  const col = (label, x) => '<div class="cmp-col"><div class="cmp-h">' + label + '</div><div class="cmp-v">' + man(x.r.takeHome) + '<small>万円/年</small></div><div class="cmp-s">月 ' + man(x.r.takeHomeMonthly) + '万円 ・ 額面 ' + man(x.income) + '万円</div>' + splitBar(x.r) + '</div>';
+  $('out').innerHTML =
+    '<section class="hero"><div class="hero-label">' + better + '</div>' +
+    '<div class="hero-main"><span class="hero-k">年</span><span class="hero-v">' + sign(Math.abs(take)).replace('万円', '') + '</span><span class="hero-u">万円</span></div>' +
+    '<div class="hero-sub">月にすると <strong>' + sign(Math.abs(take) / 12).replace('+', '') + '</strong>　・　額面の差 ' + sign(gross) + ' のうち手取りの差は ' + (gross ? Math.round(take / gross * 100) : 0) + '%</div></section>' +
+    '<div class="cmp">' + col('🅰 A社', A) + col('🅱 B社', B) + '</div>' +
+    '<div class="wrap" style="margin-top:14px"><table><thead><tr><th>項目（年額）</th><th>A社</th><th>B社</th><th>差（B−A）</th></tr></thead><tbody>' +
+    [['額面', 'income'], ['社会保険料', 'social'], ['所得税', 'incomeTax'], ['住民税', 'residentTax'], ['手取り', 'takeHome']].map(([k, f]) => {
+      const a = f === 'income' ? A.income : A.r[f], b = f === 'income' ? B.income : B.r[f];
+      return '<tr' + (f === 'takeHome' ? ' class="hl"' : '') + '><td>' + k + '</td><td>' + man(a) + '万</td><td>' + man(b) + '万</td><td>' + sign(b - a).replace('万円', '万') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+document.querySelectorAll('#cmp input, #cmp select').forEach((el) => el.addEventListener('input', render));
+render();
+</script>`;
+  return layout({
+    title: `内定・転職オファー比較｜2社の手取りの差を計算【${RULES.label}】｜${config.siteName}`,
+    description: '転職・内定で迷ったときに、2社の月給・ボーナス・勤務地から手取りの差を計算する無料ツール。額面の差のうち、実際に手元に残る差がひと目でわかります。',
+    path: 'hikaku.html', body,
   });
 }
 
@@ -513,10 +643,14 @@ function kabePage() {
 <div class="crumb"><a href="${SITE}/">手取りナビ</a> › 手取りの壁</div>
 <h1>${RULES.label}の「手取りの壁」：年収が増えると手取りが減るポイント</h1>
 <p class="lead">2026年は税制改正で基礎控除が大きく変わり、年収によっては<strong>収入が増えると手取りが減る</strong>ポイントがあります。会社員（賞与なし）の場合で、壁の前後の手取りを計算しました。</p>
-<div class="warn">「103万円の壁」「130万円の壁」など、パート・アルバイトの扶養に関する壁はこのページの対象外です（今後追加予定）。</div>
+<div class="callout info"><span class="ci">ℹ️</span><div>「103万円の壁」「130万円の壁」など、パート・アルバイトの扶養に関する壁はこのページの対象外です（今後追加予定）。</div></div>
+<nav class="toc" aria-label="目次"><div class="toc-h">目次</div><ol>
+${WALLS.map((w) => `<li><a href="#${w.key}">年収約${man(w.at)}万円：${esc(w.title)}</a></li>`).join('\n')}
+<li><a href="#grade">社会保険料の等級による小さな段差</a></li>
+</ol></nav>
 ${adSlot()}
 ${sections}
-<h2>社会保険料の等級による小さな段差</h2>
+<h2 id="grade">社会保険料の等級による小さな段差</h2>
 <p>社会保険料は月給を「標準報酬月額」の等級に当てはめて決まるため、月給が等級の境目を越えると保険料が一段上がります。境目のすぐ上では、昇給額より保険料の増加が大きくなり、手取りがわずかに減ることがあります（年数千円〜3万円程度）。</p>`;
   return layout({
     title: `${RULES.label}の手取りの壁｜年収が増えると手取りが減るのはいくら？`,
@@ -532,17 +666,48 @@ function aboutPage() {
 <p>手取りナビは、会社員の手取りを${RULES.label}の制度に基づいて計算しています。最終更新：${RULES.updated}</p>
 <h2>前提</h2>
 <ul class="points">
-<li>給与収入のみで、賞与（ボーナス）はなし。月給 = 年収 ÷ 12 として標準報酬月額を決めています。賞与がある場合、社会保険料は少し変わります。</li>
-<li>健康保険は協会けんぽ東京支部（${pct(RULES.healthRate, 2)}%）、介護保険${pct(RULES.kaigoRate, 2)}%（40〜64歳）、子ども・子育て支援金${pct(RULES.kodomoRate, 2)}%、厚生年金${pct(RULES.pensionRate, 1)}%（いずれも本人負担はその半分）、雇用保険${pct(RULES.koyouRate, 1)}%（一般の事業）。</li>
+<li>給与収入のみ。年収別ページは賞与（ボーナス）なし・東京都の場合。計算ツールでは賞与（年2回・同額で支給）と都道府県を指定できます。月給 =（年収 − 賞与）÷ 12 として標準報酬月額を決め、賞与には標準賞与額の上限（健康保険は年度573万円、厚生年金は1回150万円）を適用しています。</li>
+<li>健康保険は協会けんぽ（令和8年度の都道府県別料率。東京都は${pct(RULES.healthRate, 2)}%）、介護保険${pct(RULES.kaigoRate, 2)}%（40〜64歳）、子ども・子育て支援金${pct(RULES.kodomoRate, 2)}%、厚生年金${pct(RULES.pensionRate, 1)}%（いずれも本人負担はその半分）、雇用保険${pct(RULES.koyouRate, 1)}%（一般の事業）。</li>
 <li>所得税は令和8年分（基礎控除の特例加算、給与所得控除の最低保障74万円を含む）。復興特別所得税2.1%を含みます。</li>
 <li>住民税は同じ所得に対する年額（実際は翌年6月から納付）。税率10%、均等割5,000円（森林環境税含む）、給与所得控除は令和8年度の住民税の計算方法（最低保障65万円）を使っています。</li>
 <li>配偶者控除は配偶者の収入がない場合、扶養控除は16歳以上の一般の扶養親族として計算しています。生命保険料控除などその他の控除は含みません。</li>
 <li>ふるさと納税の上限は「住民税所得割額 × 20% ÷（90% − 所得税率 × 1.021）+ 2,000円」の目安です。</li>
 </ul>
+<h2 id="sources">出典</h2>
+<ul class="points">
+<li>所得税（基礎控除・給与所得控除・税率）：<a href="https://www.nta.go.jp/users/gensen/nencho/index/kyuyosyotokusya.htm" rel="noopener">国税庁「給与所得者（従業員）の方へ（令和８年分）」</a>、令和8年度税制改正大綱</li>
+<li>健康保険・介護保険・子ども・子育て支援金：<a href="https://www.kyoukaikenpo.or.jp/about/business/insurance_rate/rate_prefectures/r08/index.html" rel="noopener">協会けんぽ「令和8年度の保険料率」</a></li>
+<li>厚生年金保険料：<a href="https://www.nenkin.go.jp/service/kounen/hokenryo/ryogaku/ryogakuhyo/index.html" rel="noopener">日本年金機構「厚生年金保険料額表」</a></li>
+<li>雇用保険料：<a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000108634.html" rel="noopener">厚生労働省「雇用保険料率について」</a>（令和8年度）</li>
+<li>住民税：<a href="https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/czaisei_seido/150790_06.html" rel="noopener">総務省「個人住民税」</a></li>
+<li>平均年収：<a href="${AVERAGES.sourceUrl}" rel="noopener">${AVERAGES.source}</a></li>
+</ul>
 <h2>注意</h2>
 <p>実際の手取りは、勤務先の健康保険組合、お住まいの自治体、各種控除、通勤手当などにより変わります。正確な金額は給与明細や源泉徴収票、お住まいの自治体の案内でご確認ください。</p>
 <p>計算の誤りに気づいた場合は、<a href="https://github.com/kjsa6297-pixel/tedori-navi/issues">GitHub の Issues</a> からお知らせいただけると助かります。</p>`;
   return layout({ title: `計算方法と前提｜${config.siteName}`, description: '手取りナビの計算方法・前提条件・使用している保険料率と税制。', path: 'about.html', body });
+}
+
+function operatorPage() {
+  const body = `
+<h1>運営者情報</h1>
+<table style="border:1px solid var(--line);border-radius:14px;overflow:hidden">
+<tbody>
+<tr><td>サイト名</td><td style="text-align:left;white-space:normal">${esc(config.siteName)}</td></tr>
+<tr><td>運営者</td><td style="text-align:left;white-space:normal">${esc(config.operator || '手取りナビ編集部')}</td></tr>
+<tr><td>お問い合わせ</td><td style="text-align:left;white-space:normal"><a href="https://github.com/kjsa6297-pixel/tedori-navi/issues">GitHub の Issues</a></td></tr>
+<tr><td>最終更新</td><td style="text-align:left;white-space:normal">${RULES.updated}</td></tr>
+</tbody></table>
+<h2>このサイトについて</h2>
+<p>「年収から手取りはいくら？」「昇給・転職で手取りはいくら増える？」に、最新の制度で正確に答えるために作った無料ツールです。計算はすべて公的機関が公表している税率・保険料率に基づき、計算方法と前提は<a href="${SITE}/about.html">計算方法と前提</a>で公開しています。</p>
+<h2>大切にしていること</h2>
+<ul class="points">
+<li><strong>正確さ：</strong>制度の手順どおりに手計算した値と一致するかを自動テストで確認し、テストに通ったものだけを公開しています。</li>
+<li><strong>すぐ更新：</strong>税率・保険料率が変わる時期（1月・3月・4月）に必ず確認し、全ページを更新します。</li>
+<li><strong>中立：</strong>特定の会社のサービスに誘導するためのサイトではありません。広告やアフィリエイトリンクを載せる場合は「PR」と明記し、読者の得になるものだけを選びます。</li>
+</ul>
+<p>計算の誤りやわかりにくい点に気づいたら、お気軽にお知らせください。</p>`;
+  return layout({ title: `運営者情報｜${config.siteName}`, description: '手取りナビの運営者情報・運営方針・お問い合わせ先。', path: 'operator.html', body });
 }
 
 function privacyPage() {
@@ -570,10 +735,12 @@ write('nenshu/index.html', nenshuIndex());
 for (const n of pageIncomes) write(`nenshu/${n}.html`, nenshuPage(n));
 write('kabe.html', kabePage());
 write('about.html', aboutPage());
+write('hikaku.html', hikakuPage());
+write('operator.html', operatorPage());
 write('privacy.html', privacyPage());
 write('404.html', layout({ title: 'ページが見つかりません', description: '', path: '404.html', body: `<h1>ページが見つかりません</h1><p><a href="${SITE}/">手取り計算ツールへ戻る</a></p>` }));
 
-const urls = ['', 'nenshu/', 'kabe.html', 'about.html', ...pageIncomes.map((n) => `nenshu/${n}.html`)];
+const urls = ['', 'nenshu/', 'hikaku.html', 'kabe.html', 'about.html', 'operator.html', ...pageIncomes.map((n) => `nenshu/${n}.html`)];
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((u) => `  <url><loc>${SITE}/${u}</loc><lastmod>${RULES.updated}</lastmod></url>`).join('\n')}
