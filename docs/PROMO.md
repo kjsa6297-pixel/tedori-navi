@@ -1,11 +1,11 @@
 # 宣伝の自動化（𝕏・はてなブログ・note）
 
 ## しくみ
-- **毎日 12:15（日本時間）**：𝕏 の投稿案を作る
+- **毎日 12:15（日本時間）**：SNS の投稿案を作る（Bluesky は自動投稿、𝕏 はタップ投稿 or API で自動）
 - **毎週月曜 7:05**：ブログ記事の案を作る（はてなブログ用。note にも貼れる）
 - 文章は計算エンジンの数字から自動で作る（AI不使用・費用ゼロ）。30日以内に同じ文面は出ない
 - **確認モード**（`site.config.json` の `promo.auto: false`）：投稿案が GitHub の Issue に届く → 内容がよければ `承認` ラベルを付ける → 自動で投稿され、Issue にリンクが付いて閉じる
-- **自動モード**（`promo.auto: true`）：作った投稿案をそのまま投稿。記事は note 貼り付け用の Issue だけ作る
+- **自動モード**（`promo.auto: true`）：作った投稿案をそのまま投稿（Bluesky・はてなブログ・API設定時の 𝕏）。𝕏 の API がなければ「𝕏用」Issue（タップ投稿）、記事は note 貼り付け用の Issue だけ作る
 - note は公式の投稿APIがなく自動投稿は規約上のリスクがあるため、**貼り付けは手作業**
 - **𝕏 は無料でも使える**：API を設定しなくても、投稿案の Issue に「📱 𝕏 で投稿する」リンクが付く。タップすると文面入りの投稿画面が開くので「ポスト」を押すだけ。API（有料）を設定した場合だけ完全自動になる
 
@@ -19,19 +19,26 @@
 4. クレジットを購入（最低 $5 程度）。**支出上限（spend cap）を低め（例：$10）に設定する**
    - 目安：リンク付き投稿は1件約 $0.20 → 1日1件で月 約 $6
 
-### 2. はてなブログ（無料）
+### 2. Bluesky（無料）
+1. https://bsky.app でアカウントを作る（例：`tedorinavi.bsky.social`）
+2. 設定 → プライバシーとセキュリティ → **アプリパスワード** → 追加（名前は「手取りナビ」など）
+3. 表示されたパスワードを控える（ログイン用のパスワードとは別物。こちらだけを登録する）
+
+### 3. はてなブログ（無料）
 1. はてなブログを開設し、設定 → 基本設定 → 編集モードを **Markdown** にする
 2. 設定 → 詳細設定 → 「AtomPub」欄の **APIキー** を確認
 
-### 3. GitHub に登録
+### 4. GitHub に登録
 リポジトリの Settings → Secrets and variables → Actions → **New repository secret** で登録：
 
 | 名前 | 中身 |
 |---|---|
-| `X_API_KEY` | API Key |
-| `X_API_SECRET` | API Key Secret |
-| `X_ACCESS_TOKEN` | Access Token |
-| `X_ACCESS_SECRET` | Access Token Secret |
+| `BLUESKY_HANDLE` | Bluesky のハンドル（例：`tedorinavi.bsky.social`） |
+| `BLUESKY_APP_PASSWORD` | アプリパスワード |
+| `X_API_KEY` | API Key（任意） |
+| `X_API_SECRET` | API Key Secret（任意） |
+| `X_ACCESS_TOKEN` | Access Token（任意） |
+| `X_ACCESS_SECRET` | Access Token Secret（任意） |
 | `HATENA_ID` | はてなID |
 | `HATENA_BLOG_ID` | ブログのドメイン（例：`xxxx.hatenablog.com`） |
 | `HATENA_API_KEY` | AtomPub の APIキー |

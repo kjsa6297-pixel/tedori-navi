@@ -5,7 +5,7 @@
 //   node scripts/promo/run.mjs preview [YYYY-MM-DD]             → 7日分の 𝕏 投稿と今週の記事を表示（確認用）
 import { readFileSync } from 'node:fs';
 import { xPost, article, xWeight } from './content.mjs';
-import { postToX, postToHatena } from './publish.mjs';
+import { postToX, postToHatena, postToBluesky, hasX, hasBluesky } from './publish.mjs';
 import { issueBody, extract } from './issue.mjs';
 
 function todayJST() {
@@ -20,8 +20,13 @@ function make(kind, date) {
 
 async function publish(kind, text) {
   if (kind === 'x') {
+    // SNS：設定されている投稿先すべて（Bluesky は無料、𝕏 は API を設定した場合のみ）
     if (xWeight(text) > 280) throw new Error(`𝕏 の文字数オーバー（${xWeight(text)}/280）`);
-    return postToX(text);
+    const targets = [hasBluesky() && postToBluesky, hasX() && postToX].filter(Boolean);
+    if (!targets.length) throw new Error('SNS の認証情報が未設定です（Bluesky：BLUESKY_HANDLE と BLUESKY_APP_PASSWORD）');
+    const urls = [];
+    for (const post of targets) urls.push(await post(text));
+    return urls.join('\n');
   }
   const [first, ...rest] = text.split('\n');
   return postToHatena(first.replace(/^#\s*/, ''), rest.join('\n').trim());

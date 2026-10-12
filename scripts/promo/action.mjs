@@ -5,6 +5,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
+import { hasX, hasBluesky } from './publish.mjs';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -18,7 +19,8 @@ const node = (...args) => execFileSync('node', [RUN, ...args], { encoding: 'utf8
 function ensureLabels() {
   for (const [name, color, desc] of [
     ['承認', '2da44e', 'このラベルを付けると投稿されます'],
-    ['promo:x', '1d9bf0', '𝕏 の投稿案'],
+    ['promo:x', '1d9bf0', 'SNS（Bluesky・𝕏）の投稿案'],
+    ['promo:x-tap', '0f1419', '𝕏 にタップで投稿するもの（投稿したら閉じる）'],
     ['promo:article', 'f5a623', 'ブログ記事の案（はてなブログ）'],
     ['promo:note', '41c9b4', 'note に貼る記事'],
   ]) gh('label', 'create', name, '--color', color, '--description', desc, '--force');
@@ -36,10 +38,21 @@ if (cmd === 'draft') {
   ensureLabels();
   const d = JSON.parse(node('draft', kind));
   const label = kind === 'x' ? 'promo:x' : 'promo:article';
-  // 𝕏 API が未設定なら、自動モードでも「タップで投稿」リンク付きの Issue にする（無料）
-  const hasX = ['X_API_KEY', 'X_API_SECRET', 'X_ACCESS_TOKEN', 'X_ACCESS_SECRET'].every((k) => process.env[k]);
-  if (!auto || (kind === 'x' && !hasX)) {
-    console.log(createIssue(`${kind === 'x' ? '𝕏' : '記事'}：${d.title.slice(0, 60)}`, d.body, label));
+  if (!auto) {
+    console.log(createIssue(`${kind === 'x' ? 'SNS' : '記事'}：${d.title.slice(0, 60)}`, d.body, label));
+  } else if (kind === 'x') {
+    // Bluesky（と、API を設定していれば 𝕏）は自動投稿。𝕏 の API がなければタップ投稿用の Issue を作る
+    const file = join(ROOT, '.promo-text.md');
+    writeFileSync(file, d.text);
+    let done = '';
+    if (hasBluesky() || hasX()) {
+      done = node('publish-text', 'x', file);
+      console.log(`投稿しました:\n${done}`);
+    }
+    if (!hasX()) {
+      const body = `${done ? `自動で投稿しました：\n${done}\n\n` : ''}${d.body.split('\n\n<sub>')[0]}\n\n${d.body.slice(d.body.indexOf('<!-- promo:start -->'))}`;
+      console.log(createIssue(`𝕏用：${d.title.slice(0, 60)}`, body, 'promo:x-tap'));
+    }
   } else {
     const file = join(ROOT, '.promo-text.md');
     writeFileSync(file, d.text);

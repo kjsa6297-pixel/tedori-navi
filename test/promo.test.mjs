@@ -51,3 +51,20 @@ test('Issue 本文から投稿内容をそのまま取り出せる', () => {
   const a = article('2026-10-13');
   assert.equal(extract(issueBody(a)), `# ${a.title}\n\n${a.body}`);
 });
+
+test('Bluesky のリンク・タグ位置（UTF-8バイト）が1年分すべて正しく、300文字以内', async () => {
+  const { blueskyFacets, blueskyRecord, graphemes } = await import('../scripts/promo/publish.mjs');
+  for (let i = 0; i < 365; i++) {
+    const text = xPost(day(i)).body;
+    assert.ok(graphemes(text) <= 300, day(i));
+    const buf = Buffer.from(text, 'utf8');
+    const facets = blueskyFacets(text);
+    assert.ok(facets.some((f) => f.features[0].$type.endsWith('#link')), `${day(i)}: リンクがない`);
+    for (const f of facets) {
+      const s = buf.subarray(f.index.byteStart, f.index.byteEnd).toString('utf8');
+      const feat = f.features[0];
+      assert.equal(s, feat.uri ?? `#${feat.tag}`, day(i));
+    }
+    assert.equal(blueskyRecord(text).embed.external.uri, facets.find((f) => f.features[0].uri).features[0].uri);
+  }
+});

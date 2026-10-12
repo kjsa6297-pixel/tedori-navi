@@ -56,3 +56,51 @@ export async function postToHatena(title, markdown, env = process.env) {
   const m = text.match(/<link rel="alternate" type="text\/html" href="([^"]+)"/);
   return m ? m[1] : url;
 }
+
+// ─── Bluesky（AT Protocol・無料） ──────────────────────────────
+// リンクとハッシュタグは「facet」で指定する。位置は UTF-8 のバイト数で数える
+export function blueskyFacets(text) {
+  const facets = [];
+  const bytes = (s) => Buffer.byteLength(s, 'utf8');
+  for (const m of text.matchAll(/https?:\/\/[^\s]+/g)) {
+    const start = bytes(text.slice(0, m.index));
+    facets.push({ index: { byteStart: start, byteEnd: start + bytes(m[0]) }, features: [{ $type: 'app.bsky.richtext.facet#link', uri: m[0] }] });
+  }
+  for (const m of text.matchAll(/(^|\s)#([^\s#]+)/g)) {
+    const at = m.index + m[1].length;
+    const start = bytes(text.slice(0, at));
+    facets.push({ index: { byteStart: start, byteEnd: start + bytes(`#${m[2]}`) }, features: [{ $type: 'app.bsky.richtext.facet#tag', tag: m[2] }] });
+  }
+  return facets;
+}
+
+export const graphemes = (s) => [...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(s)].length;
+
+export function blueskyRecord(text, now = new Date()) {
+  const url = text.match(/https?:\/\/[^\s]+/)?.[0];
+  const record = { $type: 'app.bsky.feed.post', text, createdAt: now.toISOString(), langs: ['ja'], facets: blueskyFacets(text) };
+  // リンクカード（画像なし）
+  if (url) record.embed = { $type: 'app.bsky.embed.external', external: { uri: url, title: '手取りナビ｜2026年の手取り計算', description: text.split('\n')[0] } };
+  return record;
+}
+
+export async function postToBluesky(text, env = process.env) {
+  const missing = ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'].filter((k) => !env[k]);
+  if (missing.length) throw new Error(`Bluesky の認証情報が未設定です: ${missing.join(', ')}`);
+  if (graphemes(text) > 300) throw new Error(`Bluesky の文字数オーバー（${graphemes(text)}/300）`);
+  const host = 'https://bsky.social/xrpc';
+  const s = await fetch(`${host}/com.atproto.server.createSession`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifier: env.BLUESKY_HANDLE, password: env.BLUESKY_APP_PASSWORD }) });
+  const session = await s.json().catch(() => ({}));
+  if (!s.ok) throw new Error(`Bluesky のログインに失敗しました（${s.status}）: ${session.message || ''}`);
+  const res = await fetch(`${host}/com.atproto.repo.createRecord`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessJwt}` },
+    body: JSON.stringify({ repo: session.did, collection: 'app.bsky.feed.post', record: blueskyRecord(text) }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`Bluesky への投稿に失敗しました（${res.status}）: ${json.message || ''}`);
+  return `https://bsky.app/profile/${session.handle}/post/${json.uri.split('/').pop()}`;
+}
+
+export const hasX = (env = process.env) => ['X_API_KEY', 'X_API_SECRET', 'X_ACCESS_TOKEN', 'X_ACCESS_SECRET'].every((k) => env[k]);
+export const hasBluesky = (env = process.env) => Boolean(env.BLUESKY_HANDLE && env.BLUESKY_APP_PASSWORD);
