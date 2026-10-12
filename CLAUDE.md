@@ -13,6 +13,7 @@
 - `src/tax.js` 計算ロジック（ブラウザとNode共通）。制度値は `RULES` と各表
 - `src/view.js` 画面部品（HTML文字列）。ビルドと計算ツールの両方で使う
 - `scripts/build.mjs` 全ページを `dist/` に生成
+- `scripts/promo/` 宣伝の自動化（投稿文の生成・𝕏/はてなブログへの投稿）。説明は `docs/PROMO.md`
 - `site.config.json` サイトURL、AdSense・GA4・アフィリエイトリンク、「次に知りたいこと」の並び順（`nextOrder`）
 
 ## コマンド

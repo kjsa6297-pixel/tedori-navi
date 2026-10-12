@@ -26,5 +26,8 @@
     "ideco"
   ],
   "operator": "手取りナビ編集部",
-  "googleSiteVerification": ""
+  "googleSiteVerification": "",
+  "promo": {
+    "auto": false
+  }
 }

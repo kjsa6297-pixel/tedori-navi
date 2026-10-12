@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test test/*.test.mjs",
+    "promo:preview": "node scripts/promo/run.mjs preview",
     "build": "node scripts/build.mjs"
   },
   "engines": { "node": ">=20" }
