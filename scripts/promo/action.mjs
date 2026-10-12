@@ -56,7 +56,7 @@ if (cmd === 'draft') {
   const k = labels.includes('promo:x') ? 'x' : labels.includes('promo:article') ? 'article' : null;
   if (!k) process.exit(0);
   // 自動で作った Issue だけを投稿対象にする
-  if (issue.user.login !== 'github-actions[bot]') throw new Error('自動作成された Issue ではないため投稿しません');
+  if (!['github-actions[bot]', 'github-actions'].includes(issue.user.login)) throw new Error('自動作成された Issue ではないため投稿しません');
   const file = join(ROOT, '.promo-issue.md');
   writeFileSync(file, issue.body || '');
   try {
