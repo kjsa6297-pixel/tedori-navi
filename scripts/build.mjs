@@ -5,12 +5,14 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { calcTakeHome, deductionValue, RULES, yen, man } from '../src/tax.js';
+import { calcTakeHome, RULES, yen, man } from '../src/tax.js';
+import { hero, nextItems, nextCards, lifeTiles, upBars, lineChart, familyBars, saveTiles } from '../src/view.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
 const config = JSON.parse(readFileSync(join(ROOT, 'site.config.json'), 'utf8'));
-const SITE = config.siteUrl.replace(/\/$/, '');
+// SITE_URL=http://localhost:8765 でローカル確認用にビルドできる
+const SITE = (process.env.SITE_URL || config.siteUrl).replace(/\/$/, '');
 const TODAY = new Date().toISOString().slice(0, 10);
 
 // 年収別ページを作る範囲（万円）
@@ -39,74 +41,162 @@ const cta = (key) => {
 };
 
 // ─── 共通レイアウト ──────────────────────────────────────
+// データ色は検証済みの参照パレット（色覚多様性・コントラストを validator で確認）
 const CSS = `
-:root{--bg:#f6f7f9;--surface:#fff;--text:#1a1d23;--sub:#5b6270;--line:#e3e6eb;--accent:#0b6e4f;--accent-soft:#e3f2ec;
---c-take:#0b6e4f;--c-social:#4a7fd4;--c-it:#d48a1f;--c-rt:#b5523b;--warn:#8a5a00;--warn-bg:#fff6e0}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151a;--surface:#1b1f26;--text:#e8eaee;--sub:#a0a7b4;--line:#2c323c;
---accent:#4cc79a;--accent-soft:#163329;--c-take:#4cc79a;--c-social:#7aa5ef;--c-it:#eab05a;--c-rt:#e2826b;--warn:#f0c46a;--warn-bg:#2e2611}}
-:root[data-theme="dark"]{--bg:#12151a;--surface:#1b1f26;--text:#e8eaee;--sub:#a0a7b4;--line:#2c323c;--accent:#4cc79a;--accent-soft:#163329;
---c-take:#4cc79a;--c-social:#7aa5ef;--c-it:#eab05a;--c-rt:#e2826b;--warn:#f0c46a;--warn-bg:#2e2611}
+:root{color-scheme:light;--bg:#f4f5f7;--surface:#fff;--text:#14171c;--sub:#555b66;--muted:#7d838e;--line:#e2e5ea;--grid:#eceef1;
+--accent:#1f63b8;--accent-soft:#e8f0fb;--alert:#9a3d00;--alert-bg:#fff1e6;
+--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--gross:#9aa0a8;--gap:rgba(235,104,52,.12)}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;--bg:#111317;--surface:#1a1d22;--text:#eceef1;--sub:#b3b9c3;--muted:#8a919c;--line:#2b3038;--grid:#23272e;
+--accent:#6aa6ef;--accent-soft:#17263a;--alert:#ffb27a;--alert-bg:#33200f;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--gross:#6b717a;--gap:rgba(217,89,38,.16)}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#111317;--surface:#1a1d22;--text:#eceef1;--sub:#b3b9c3;--muted:#8a919c;--line:#2b3038;--grid:#23272e;
+--accent:#6aa6ef;--accent-soft:#17263a;--alert:#ffb27a;--alert-bg:#33200f;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--gross:#6b717a;--gap:rgba(217,89,38,.16)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;line-height:1.75;font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;line-height:1.7;font-size:16px;font-variant-numeric:tabular-nums}
 a{color:var(--accent)}
+small{font-size:.75em;color:var(--sub);font-weight:400}
 .top{background:var(--surface);border-bottom:1px solid var(--line)}
-.top div{max-width:760px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.top div{max-width:760px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .logo{font-weight:800;text-decoration:none;color:var(--text);font-size:18px}
 .logo b{color:var(--accent)}
 .top nav{display:flex;gap:14px;font-size:14px;margin-left:auto}
 .top nav a{color:var(--sub);text-decoration:none}
-main{max-width:760px;margin:0 auto;padding:24px 16px 56px}
-.crumb{font-size:13px;color:var(--sub);margin-bottom:8px}
-.crumb a{color:var(--sub)}
-h1{font-size:clamp(22px,5.4vw,30px);line-height:1.4;margin-bottom:10px}
-h2{font-size:20px;margin:36px 0 12px;padding-left:10px;border-left:4px solid var(--accent)}
-p{margin-bottom:12px}
-.lead{color:var(--sub)}
-.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 12px}
-.tile .k{font-size:12px;color:var(--sub)}
-.tile .v{font-size:clamp(18px,5vw,26px);font-weight:800;font-variant-numeric:tabular-nums}
-.tile.main{background:var(--accent-soft);border-color:transparent}
-.tile.main .v{color:var(--accent)}
-@media (max-width:520px){.tiles{grid-template-columns:1fr 1fr}.tile.main{grid-column:1/-1}}
-.bar{display:flex;height:22px;border-radius:6px;overflow:hidden;margin:6px 0 14px;gap:2px}
-.bar span{display:block}
-.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--sub);margin-bottom:6px}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;background:var(--surface);border-radius:12px;overflow:hidden}
-th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;font-size:15px}
-th:first-child,td:first-child{text-align:left}
-td:not(:first-child){white-space:nowrap}
-@media (max-width:520px){th,td{padding:8px;font-size:14px}}
-.inrow span{white-space:nowrap}
-thead th{font-size:13px;color:var(--sub);font-weight:600;background:var(--bg)}
-tr.hl td{background:var(--accent-soft);font-weight:700}
-.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
-.wrap table{border-radius:0}
-ul.points{list-style:none;display:grid;gap:10px}
-ul.points li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.warn{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:12px 14px;font-size:14px}
-.cta{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;padding:10px 16px;border-radius:10px;margin-top:8px}
-:root[data-theme="dark"] .cta{color:#0d1f18}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cta{color:#0d1f18}}
-.pr{font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.8}
-.pager{display:flex;justify-content:space-between;gap:8px;margin-top:28px;font-size:15px}
+main{max-width:760px;margin:0 auto;padding:16px 16px 96px}
+.crumb{font-size:12px;color:var(--muted);margin-bottom:8px}
+.crumb a{color:var(--muted)}
+h1{font-size:clamp(20px,5vw,26px);line-height:1.4;margin-bottom:6px}
+h2{font-size:19px;margin:40px 0 4px}
+.h2-sub{color:var(--sub);font-size:14px;margin-bottom:14px}
+p{margin-bottom:10px}
+.lead{color:var(--sub);font-size:14px}
+.note{color:var(--muted);font-size:12px;margin-top:8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+/* ヒーロー */
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px 18px 16px;margin:12px 0 8px}
+.hero-label{font-size:14px;color:var(--sub);font-weight:700}
+.hero-main{display:flex;align-items:baseline;gap:6px;margin:2px 0}
+.hero-k{font-size:20px;font-weight:700;color:var(--sub)}
+.hero-v{font-size:clamp(48px,14vw,72px);font-weight:900;line-height:1.05;color:var(--text);letter-spacing:-.02em}
+.hero-u{font-size:20px;font-weight:700}
+.hero-sub{font-size:15px;color:var(--sub);margin-bottom:14px}
+.hero-sub strong{color:var(--text)}
+.split{display:flex;gap:2px;height:28px;border-radius:8px;overflow:hidden}
+.split span{min-width:3px}
+.split-legend{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.split-legend li{font-size:12px;color:var(--sub);line-height:1.35}
+.split-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.split-legend b{display:block;font-size:16px;color:var(--text)}
+.split-legend small{font-size:11px}
+@media (max-width:420px){.split-legend{grid-template-columns:1fr 1fr}}
+/* 次に知りたいこと */
+.next{margin:20px 0 4px}
+.next-h{font-size:15px;margin:0 0 10px;color:var(--sub)}
+.next-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:560px){.next-grid{grid-template-columns:1fr 1fr}}
+.next-card{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;text-decoration:none;color:var(--text);transition:border-color .15s,transform .15s}
+.next-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.next-card .ni{font-size:22px;line-height:1}
+.next-card .nq{font-size:13px;color:var(--sub);margin-top:4px}
+.next-card .na{font-size:17px;font-weight:800;color:var(--accent)}
+.next-card.alert{background:var(--alert-bg);border-color:transparent}
+.next-card.alert .na{color:var(--alert)}
+/* 年収アップ */
+.upbars{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.up-row{display:grid;grid-template-columns:92px 1fr 92px;align-items:center;gap:10px;padding:7px 0}
+.up-k{font-size:14px;font-weight:700;line-height:1.3;display:flex;flex-direction:column}
+.up-track{height:14px;background:var(--accent-soft);border-radius:4px;overflow:hidden}
+.up-track span{display:block;height:100%;background:var(--s1);border-radius:4px}
+.up-v{text-align:right;line-height:1.3;display:flex;flex-direction:column}
+.up-v b{font-size:15px}
+.sw{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:4px}
+.sw-track{background:var(--accent-soft);border:1px solid var(--line)}
+.sw-fill,.sw-take{background:var(--s1)}
+.sw-gross{background:none;border-top:2px dashed var(--gross);height:0;border-radius:0}
+.sw-gap{background:var(--gap);border:1px solid var(--line)}
+/* 折れ線 */
+.chart{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 8px 10px}
+.chart svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.chart .grid{stroke:var(--grid);stroke-width:1}
+.chart .ax{fill:var(--muted);font-size:11px}
+.chart .me-t{paint-order:stroke;stroke:var(--surface);stroke-width:4px}
+.chart .gap{fill:var(--gap)}
+.chart .gross{stroke:var(--gross);stroke-width:2;stroke-dasharray:5 4}
+.chart .take{fill:none;stroke:var(--s1);stroke-width:2.5;stroke-linejoin:round}
+.chart .me{fill:var(--s1);stroke:var(--surface);stroke-width:3}
+.chart .me-v{stroke:var(--s1);stroke-width:1;stroke-dasharray:2 3;opacity:.6}
+.chart .me-t{fill:var(--text);font-size:13px;font-weight:700}
+.chart .cross{stroke:var(--muted);stroke-width:1}
+.chart .dot{fill:var(--surface);stroke:var(--s1);stroke-width:2}
+.chart .tip{position:absolute;top:8px;width:150px;opacity:.94;background:var(--text);color:var(--bg);font-size:12px;border-radius:8px;padding:6px 8px;pointer-events:none;line-height:1.5}
+.chart figcaption{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--sub);padding:4px 8px 0}
+/* 横棒 */
+.hbars{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.hb-row{display:grid;grid-template-columns:minmax(110px,34%) 1fr 84px;align-items:center;gap:10px;padding:6px 0}
+.hb-k{font-size:13px;line-height:1.35}
+.hb-bar{height:14px;position:relative;border-left:0}
+.hb-bar::before{content:'';position:absolute;left:50%;top:-4px;bottom:-4px;border-left:1px solid var(--muted)}
+.hb-bar span{position:absolute;top:0;height:100%}
+.hb-bar .pos{left:50%;background:var(--s1);border-radius:0 4px 4px 0}
+.hb-bar .neg{right:50%;background:var(--s2);border-radius:4px 0 0 4px}
+.sw-neg{background:var(--s2)}
+.hb-v{text-align:right;line-height:1.3;display:flex;flex-direction:column}
+.hb-v b{font-size:15px}
+/* タイル */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tiles.two{grid-template-columns:1fr 1fr}
+@media (max-width:560px){.tiles,.tiles.two{grid-template-columns:1fr}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.tile .k{font-size:13px;color:var(--sub)}
+.tile .v{font-size:26px;font-weight:800;line-height:1.3;margin-top:2px}
+.callout{display:flex;gap:10px;align-items:flex-start;background:var(--alert-bg);color:var(--text);border-radius:14px;padding:12px 14px;margin-top:12px;font-size:14px}
+.callout .ci{font-size:20px;line-height:1.2}
+.callout.info{background:var(--accent-soft)}
+.cta{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;padding:9px 14px;border-radius:10px;margin-top:10px;font-size:14px}
+.pr{font-size:10px;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.85}
+/* 関連リンク */
+.related{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.related a{display:block;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;text-decoration:none;color:var(--text);font-size:14px}
+.related a b{display:block;font-size:16px;color:var(--accent)}
+.related a:only-child{grid-column:1/-1}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chips a{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;text-decoration:none;font-size:14px;color:var(--text)}
-.ad{margin:28px 0;min-height:100px}
-form.calc{display:grid;gap:14px}
-form.calc label{font-weight:700;font-size:14px;display:block;margin-bottom:4px}
+/* 表（早見表など） */
+table{width:100%;border-collapse:collapse;background:var(--surface)}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;font-size:14px;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:12px;color:var(--sub);font-weight:600;background:var(--bg);position:sticky;top:0}
+tr.hl td{background:var(--accent-soft);font-weight:700}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+td .minibar{display:inline-block;height:8px;background:var(--s1);border-radius:2px;vertical-align:middle;margin-right:6px}
+details.more{margin-top:10px}
+details.more summary{cursor:pointer;color:var(--accent);font-size:14px;padding:6px 0}
+/* 下部固定の導線 */
+.sticky{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:10}
+.sticky div{max-width:760px;margin:0 auto;display:flex;gap:8px}
+.sticky a{flex:1;text-align:center;text-decoration:none;font-weight:700;font-size:14px;padding:10px;border-radius:10px}
+.sticky .p{background:var(--accent);color:#fff}
+.sticky .s{background:var(--bg);color:var(--text);border:1px solid var(--line)}
+/* 計算フォーム */
+form.calc{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 18px;display:grid;gap:12px}
+form.calc label.big{font-weight:700;font-size:14px;color:var(--sub)}
 .inrow{display:flex;align-items:center;gap:8px}
-form.calc input[type=number]{width:100%;font-size:22px;font-weight:700;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
-form.calc select{font-size:16px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text)}
-.checks{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:15px}
-.checks label{font-weight:400!important;display:flex!important;align-items:center;gap:6px}
-footer{border-top:1px solid var(--line);color:var(--sub);font-size:13px;text-align:center;padding:24px 16px}
-footer a{color:var(--sub)}
+.inrow span{white-space:nowrap;font-weight:700}
+form.calc input[type=number]{width:100%;font-size:28px;font-weight:800;padding:8px 12px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text)}
+form.calc input[type=number]:focus{outline:none;border-color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg label{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;cursor:pointer}
+.seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.seg select{font-size:14px;background:transparent;color:var(--text);border:0}
+.ad{margin:28px 0;min-height:100px}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center;padding:24px 16px 100px}
+footer a{color:var(--muted)}
 `;
 
-function layout({ title, description, path, body, head = '' }) {
+const gaHead = config.gaMeasurementId
+  ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${esc(config.gaMeasurementId)}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${esc(config.gaMeasurementId)}');</script>`
+  : '';
+
+function layout({ title, description, path, body, head = '', sticky = '' }) {
   const url = `${SITE}/${path}`;
   return `<!DOCTYPE html>
 <html lang="ja">
@@ -123,6 +213,7 @@ function layout({ title, description, path, body, head = '' }) {
 <meta property="og:site_name" content="${esc(config.siteName)}">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%B4%3C/text%3E%3C/svg%3E">
+${gaHead}
 ${adHead}
 ${head}
 <style>${CSS}</style>
@@ -130,17 +221,19 @@ ${head}
 <body>
 <header class="top"><div>
 <a class="logo" href="${SITE}/">💴 手取り<b>ナビ</b></a>
-<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">年収別一覧</a><a href="${SITE}/kabe.html">手取りの壁</a></nav>
+<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">早見表</a><a href="${SITE}/kabe.html">手取りの壁</a></nav>
 </div></header>
 <main>
 ${body}
 </main>
+${sticky ? `<div class="sticky"><div>${sticky}</div></div>` : ''}
 <footer>
 <p>${RULES.label}の制度で計算した概算です。実際の金額は勤務先や自治体、賞与の有無などで変わります。</p>
 ${hasAffiliate ? '<p>当サイトはアフィリエイトプログラムを利用しています（PR表記のリンク）。</p>' : ''}
 <p><a href="${SITE}/about.html">計算方法と前提</a>　<a href="${SITE}/privacy.html">プライバシーポリシー</a></p>
 <p>© ${esc(config.siteName)}</p>
 </footer>
+<script type="module">import { attachCharts, trackNext } from '${SITE}/assets/view.js'; attachCharts(); trackNext();</script>
 </body>
 </html>
 `;
@@ -154,15 +247,7 @@ function write(path, html) {
 
 // ─── 部品 ─────────────────────────────────────────────────
 function breakdown(r) {
-  const seg = [
-    ['手取り', r.takeHome, 'var(--c-take)'],
-    ['社会保険料', r.social, 'var(--c-social)'],
-    ['所得税', r.incomeTax, 'var(--c-it)'],
-    ['住民税', r.residentTax, 'var(--c-rt)'],
-  ];
   return `
-<div class="legend">${seg.map(([k, , c]) => `<span><i style="background:${c}"></i>${k}</span>`).join('')}</div>
-<div class="bar" role="img" aria-label="年収の内訳">${seg.map(([k, v, c]) => `<span title="${k}" style="width:${(v / r.income) * 100}%;background:${c}"></span>`).join('')}</div>
 <div class="wrap"><table>
 <thead><tr><th>項目</th><th>年額</th><th>月額の目安</th></tr></thead>
 <tbody>
@@ -231,97 +316,160 @@ const WALLS = [
 });
 
 // ─── 年収別ページ ──────────────────────────────────────────
+const NEXT_ORDER = config.nextOrder || ['rent', 'up', 'family', 'furusato', 'ideco'];
+const pageLink = (n) => (hasPage(n) ? `${SITE}/nenshu/${n}.html` : null);
+
+// 年収n万円の少し先にある「手取りの壁」（独身の場合）
+function wallAhead(n) {
+  return WALLS.find((w) => !w.opt.spouse && w.at / 10000 > n && w.at / 10000 <= n + 60);
+}
+
 function points(n, r) {
   const list = [];
-  const up = calc(n + 10);
-  const gain = up.takeHome - r.takeHome;
-  list.push(`課税される所得は約${man(r.taxableIT, 0)}万円で、所得税率は<strong>${pct(r.marginalIT, 0)}%</strong>（住民税10%と合わせると約${pct(r.marginalIT * 1.021 + 0.1, 0)}%）です。`);
-  list.push(gain > 0
-    ? `ここから年収が10万円増えると、手取りは<strong>約${yen(gain)}円</strong>増えます（増えた分のうち手元に残るのは${pct(gain / 100000, 0)}%）。`
-    : `ここから年収が10万円増えても、手取りは${yen(-gain)}円<strong>減ります</strong>。<a href="${SITE}/kabe.html">手取りの壁</a>の手前です。`);
-  if (r.monthly >= 635000) list.push('月給（年収÷12）が63.5万円以上なので、厚生年金保険料は上限（月59,475円）に達しています。これ以上年収が増えても厚生年金保険料は増えません。');
-  if (n >= 850) list.push('給与所得控除は年収850万円で上限（195万円）に達しています。ここから先は、増えた収入がそのまま課税対象になります。');
+  const gain = calc(n + 10).takeHome - r.takeHome;
+  list.push(['🧾', `所得税率は<strong>${pct(r.marginalIT, 0)}%</strong>。住民税と合わせ、収入が増えた分の約${pct(r.marginalIT * 1.021 + 0.1, 0)}%が税金になります（社会保険料は別）。`]);
+  if (gain <= 0) list.push(['⚠️', `ここから年収が10万円増えても手取りは${yen(-gain)}円<strong>減ります</strong>。<a href="${SITE}/kabe.html">手取りの壁</a>の手前です。`]);
+  if (r.monthly >= 635000) list.push(['🔝', '厚生年金保険料は上限（月59,475円）に達しています。ここから先、年金保険料は増えません。']);
+  if (n >= 850) list.push(['🔝', '給与所得控除は上限（195万円）。ここから先は、増えた収入がそのまま課税対象になります。']);
   for (const w of WALLS) {
-    const wn = w.at / 10000;
-    if (Math.abs(wn - n) <= 40) {
-      list.push(`年収約${man(w.at)}万円に「${esc(w.title)}」壁があります。越えた直後は手取りが約${yen(w.before.takeHome - w.after.takeHome)}円減り、元に戻るのは年収約${man(w.recover, 0)}万円です。<a href="${SITE}/kabe.html#${w.key}">詳しく</a>`);
+    if (Math.abs(w.at / 10000 - n) <= 40) {
+      list.push(['⚠️', `年収約${man(w.at)}万円に壁：${esc(w.title)}。越えた直後は手取りが約${man(w.before.takeHome - w.after.takeHome)}万円減ります。<a href="${SITE}/kabe.html#${w.key}">詳しく</a>`]);
     }
   }
-  return list;
+  return list.map(([i, t]) => `<div class="callout${i === '⚠️' ? '' : ' info'}"><span class="ci">${i}</span><div>${t}</div></div>`).join('');
 }
 
 function nenshuPage(n) {
   const r = calc(n);
-  const variants = [
-    ['独身・40歳未満', r],
-    ['独身・40歳以上', calc(n, { over40: true })],
-    ['配偶者を扶養（収入なし）', calc(n, { spouse: true })],
-    ['配偶者＋16歳以上の子1人を扶養', calc(n, { spouse: true, dependents: 1 })],
-  ];
-  const ups = [10, 30, 50, 100, 200].map((d) => [d, calc(n + d)]);
-  const ideco = Math.round(240000 * deductionValue(r));
-  const title = `年収${n}万円の手取りは約${man(r.takeHome, 0)}万円【${RULES.label}】月の手取り・税金の内訳`;
-  const desc = `年収${n}万円の手取りは年間約${man(r.takeHome)}万円、月約${man(r.takeHomeMonthly)}万円（${RULES.label}・独身）。社会保険料・所得税・住民税の内訳、年収が上がると手取りがいくら増えるか、扶養がある場合の手取りも計算。`;
+  const up50 = calc(n + 50);
+  const wall = wallAhead(n);
+  const extra = wall ? [{
+    key: 'kabe', icon: '⚠️', q: 'この先に手取りの壁', alert: true,
+    a: `${man(wall.at, 0)}万円で−${man(wall.before.takeHome - wall.after.takeHome)}万`, href: `${SITE}/kabe.html#${wall.key}`,
+  }] : [];
+  const title = `年収${n}万円の手取りは月${man(r.takeHomeMonthly)}万円・年${man(r.takeHome, 0)}万円【${RULES.label}】`;
+  const desc = `年収${n}万円の手取りは月約${man(r.takeHomeMonthly)}万円、年約${man(r.takeHome)}万円（${RULES.label}・独身）。家賃の目安、年収が50万円上がると手取りがいくら増えるか（+${man(up50.takeHome - r.takeHome)}万円）、結婚・扶養での違い、ふるさと納税の上限もひと目でわかります。`;
   const body = `
 <div class="crumb"><a href="${SITE}/">手取りナビ</a> › <a href="${SITE}/nenshu/">年収別の手取り</a> › 年収${n}万円</div>
-<h1>年収${n}万円の手取りは約${man(r.takeHome, 0)}万円</h1>
-<p class="lead">${RULES.label}の税金・社会保険料で計算（独身・40歳未満・賞与なしの場合）。</p>
-<div class="tiles">
-  <div class="tile main"><div class="k">年間の手取り</div><div class="v">${man(r.takeHome)}万円</div></div>
-  <div class="tile"><div class="k">月の手取り</div><div class="v">${man(r.takeHomeMonthly)}万円</div></div>
-  <div class="tile"><div class="k">手取り率</div><div class="v">${pct(r.rate)}%</div></div>
-</div>
+<h1>年収${n}万円の手取りは月${man(r.takeHomeMonthly)}万円</h1>
+<p class="lead">${RULES.label}の税金・社会保険料で計算（独身・40歳未満・賞与なし）</p>
+${hero(n, r)}
+${nextCards(nextItems(n, r), NEXT_ORDER, extra)}
 
-<h2>年収${n}万円の内訳</h2>
-${breakdown(r)}
+<h2 id="life">暮らしの目安</h2>
+<p class="h2-sub">月の手取り${man(r.takeHomeMonthly)}万円で考えると</p>
+${lifeTiles(r)}
+
+<h2 id="up">年収が上がると、手取りはいくら増える？</h2>
+<p class="h2-sub">あと50万円上がると手取りは<strong>+${man(up50.takeHome - r.takeHome)}万円</strong>。増えた分の約${pct((up50.takeHome - r.takeHome) / 500000, 0)}%が手元に残ります。</p>
+${upBars(n, r, {}, pageLink)}
+${cta('career')}
+
+<h2>年収と手取りの関係</h2>
+<p class="h2-sub">年収が上がるほど、引かれる割合が大きくなります。グラフをなぞると各年収の手取りが見られます。</p>
+${lineChart(n)}
+
+<h2 id="family">結婚・扶養・年齢で変わる？</h2>
+<p class="h2-sub">配偶者（収入なし）を扶養すると税金が減り、40歳からは介護保険料が加わります。</p>
+${familyBars(n)}
+
+<h2 id="save">税金を減らす方法</h2>
+<p class="h2-sub">年収${n}万円の人が使える代表的な2つ</p>
+${saveTiles(r, cta('furusato'), cta('ideco'))}
 
 <h2>この年収のポイント</h2>
-<ul class="points">${points(n, r).map((p) => `<li>${p}</li>`).join('')}</ul>
+${points(n, r)}
 
 ${adSlot()}
 
-<h2>年収が上がると、手取りはいくら増える？</h2>
-<div class="wrap"><table>
-<thead><tr><th>年収</th><th>手取り（年）</th><th>増える手取り</th><th>残る割合</th></tr></thead>
-<tbody>
-<tr class="hl"><td>${n}万円（今）</td><td>${man(r.takeHome)}万円</td><td>—</td><td>—</td></tr>
-${ups.map(([d, u]) => `<tr><td>${incomeLink(n + d, `${n + d}万円`)}（+${d}万）</td><td>${man(u.takeHome)}万円</td><td>+${man(u.takeHome - r.takeHome)}万円</td><td>${pct((u.takeHome - r.takeHome) / (d * 10000), 0)}%</td></tr>`).join('\n')}
-</tbody></table></div>
-<p style="margin-top:12px">昇給や転職で年収が${ups[2][0]}万円上がっても、手元に増えるのは約${man(ups[2][1].takeHome - r.takeHome)}万円です。交渉や転職先を比べるときは、額面ではなく手取りの差で考えるのがおすすめです。</p>
-${cta('career')}
+<details class="more"><summary>内訳を表で見る（社会保険料・税金の詳細）</summary>
+${breakdown(r)}
+</details>
 
-<h2>家族構成・年齢による違い</h2>
-<div class="wrap"><table>
-<thead><tr><th>条件</th><th>手取り（年）</th><th>月の手取り</th></tr></thead>
-<tbody>${variants.map(([k, v]) => `<tr><td>${k}</td><td>${man(v.takeHome)}万円</td><td>${man(v.takeHomeMonthly)}万円</td></tr>`).join('')}</tbody>
-</table></div>
-<p style="margin-top:12px">40歳になると介護保険料が加わります。16歳未満の子どもは扶養控除の対象外のため、税金は変わりません。</p>
-
-<h2>税金を減らす方法の目安</h2>
-<ul class="points">
-<li><strong>ふるさと納税：</strong>自己負担2,000円で済む寄付額の目安は<strong>約${man(r.furusato)}万円</strong>です（独身の場合）。他の控除があると上限は下がるので、少し余裕をもって寄付しましょう。${cta('furusato')}</li>
-<li><strong>iDeCo：</strong>月2万円（年24万円）積み立てると、所得税と住民税が<strong>年約${yen(ideco)}円</strong>軽くなります。積み立てたお金は原則60歳まで引き出せない点に注意してください。${cta('ideco')}</li>
-</ul>
-
-<div class="box" style="margin-top:28px">
-<p style="margin:0">年齢・扶養人数を変えて計算したいときは <a href="${SITE}/?income=${n}">手取り計算ツール</a> へ。</p>
-</div>
-
-<div class="pager">
-${hasPage(n - PAGE_STEP) ? `<a href="${SITE}/nenshu/${n - PAGE_STEP}.html">← 年収${n - PAGE_STEP}万円</a>` : '<span></span>'}
-${hasPage(n + PAGE_STEP) ? `<a href="${SITE}/nenshu/${n + PAGE_STEP}.html">年収${n + PAGE_STEP}万円 →</a>` : '<span></span>'}
+<h2>あわせて見られている年収</h2>
+<div class="related">
+${[[n - 50, '−50万円'], [n + 50, '+50万円'], [n - 10, '−10万円'], [n + 10, '+10万円']].filter(([m]) => hasPage(m)).map(([m, k]) => `<a href="${SITE}/nenshu/${m}.html">年収${m}万円（${k}）<b>月${man(calc(m).takeHomeMonthly)}万円</b></a>`).join('')}
+<a href="${SITE}/nenshu/">年収別の早見表<b>一覧で比べる</b></a>
+<a href="${SITE}/kabe.html">2026年の手取りの壁<b>損する年収は？</b></a>
 </div>`;
   const faq = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: [
-      { '@type': 'Question', name: `年収${n}万円の手取りはいくら？`, acceptedAnswer: { '@type': 'Answer', text: `${RULES.label}の制度で、独身・40歳未満なら年間約${man(r.takeHome)}万円、月約${man(r.takeHomeMonthly)}万円です。` } },
-      { '@type': 'Question', name: `年収${n}万円から50万円上がると手取りはいくら増える？`, acceptedAnswer: { '@type': 'Answer', text: `約${man(ups[2][1].takeHome - r.takeHome)}万円増えます。` } },
+      { '@type': 'Question', name: `年収${n}万円の手取りはいくら？`, acceptedAnswer: { '@type': 'Answer', text: `${RULES.label}の制度で、独身・40歳未満なら月約${man(r.takeHomeMonthly)}万円、年間約${man(r.takeHome)}万円です。` } },
+      { '@type': 'Question', name: `年収${n}万円から50万円上がると手取りはいくら増える？`, acceptedAnswer: { '@type': 'Answer', text: `約${man(up50.takeHome - r.takeHome)}万円増えます。` } },
+      { '@type': 'Question', name: `年収${n}万円の家賃の目安は？`, acceptedAnswer: { '@type': 'Answer', text: `手取りの25〜30%とすると月${man(r.takeHomeMonthly * 0.25, 1)}〜${man(r.takeHomeMonthly * 0.3, 1)}万円です。` } },
     ],
   };
   return layout({
     title, description: desc, path: `nenshu/${n}.html`, body,
     head: `<script type="application/ld+json">${JSON.stringify(faq)}</script>`,
+    sticky: `<a class="p" href="${SITE}/?income=${n}">条件を変えて計算</a>${hasPage(n + 50) ? `<a class="s" href="${SITE}/nenshu/${n + 50}.html">+50万円だと？</a>` : ''}`,
+  });
+}
+
+// ─── トップ（計算ツール） ──────────────────────────────────
+function indexPage() {
+  const popular = [300, 400, 500, 600, 700, 800, 1000, 1200, 1500];
+  const ctas = { furusato: cta('furusato'), ideco: cta('ideco') };
+  const body = `
+<h1>手取り計算ツール【${RULES.label}】</h1>
+<p class="lead">年収を入れるだけ。手取り・家賃の目安・年収アップで増える額・節税額までひと目でわかります。入力内容は送信されません。</p>
+<form class="calc" id="calc" onsubmit="return false">
+  <label class="big" for="income">年収（額面）</label>
+  <div class="inrow"><input id="income" type="number" inputmode="numeric" min="100" max="5000" step="10" value="500"><span>万円</span></div>
+  <input id="slider" type="range" min="100" max="2500" step="10" value="500" aria-label="年収スライダー">
+  <div class="seg">
+    <label><input id="over40" type="checkbox">40〜64歳</label>
+    <label><input id="spouse" type="checkbox">配偶者を扶養</label>
+    <label>扶養（16歳以上）<select id="dependents"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select>人</label>
+  </div>
+</form>
+<div id="out" aria-live="polite"></div>
+${adSlot()}
+<h2>よく見られている年収</h2>
+<p class="h2-sub">年収ごとの詳しい解説ページ</p>
+<div class="chips">${popular.map((n) => `<a href="${SITE}/nenshu/${n}.html">年収${n}万円</a>`).join('')}<a href="${SITE}/nenshu/">早見表 →</a></div>
+<h2>2026年の注目ポイント</h2>
+<div class="callout"><span class="ci">⚠️</span><div>所得税の基礎控除が最大104万円に（2026・2027年の特例）。年収約${man(WALLS[0].at, 0)}万円を超えると67万円に下がり、<a href="${SITE}/kabe.html">手取りが減る「壁」</a>があります。</div></div>
+<div class="callout info"><span class="ci">🧾</span><div>2026年4月分から「子ども・子育て支援金」が健康保険料に上乗せされています。</div></div>
+<script type="module">
+import { calcTakeHome } from './assets/tax.js';
+import { hero, nextItems, nextCards, lifeTiles, upBars, lineChart, familyBars, saveTiles, attachCharts } from './assets/view.js';
+const ORDER = ${JSON.stringify(NEXT_ORDER)};
+const CTA = ${JSON.stringify(ctas)};
+const PAGE = { min: ${PAGE_MIN}, max: ${PAGE_MAX}, step: ${PAGE_STEP} };
+const $ = (id) => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+if (q.get('income')) $('income').value = q.get('income');
+const hasPage = (n) => Number.isInteger(n) && n >= PAGE.min && n <= PAGE.max && n % PAGE.step === 0;
+let timer;
+function render() {
+  const n = Math.min(5000, Math.max(0, Math.round(parseFloat($('income').value) || 0)));
+  $('slider').value = Math.min(2500, n);
+  const opt = { over40: $('over40').checked, spouse: $('spouse').checked, dependents: +$('dependents').value };
+  if (n < 100) { $('out').innerHTML = '<div class="callout"><span class="ci">ℹ️</span><div>年収100万円以上で計算できます。</div></div>'; return; }
+  const r = calcTakeHome({ income: n * 10000, ...opt });
+  const up50 = calcTakeHome({ income: (n + 50) * 10000, ...opt });
+  $('out').innerHTML = hero(n, r) + nextCards(nextItems(n, r, opt), ORDER) +
+    '<h2 id="life">暮らしの目安</h2>' + lifeTiles(r) +
+    '<h2 id="up">年収が上がると、手取りはいくら増える？</h2><p class="h2-sub">あと50万円で手取りは<strong>+' + ((up50.takeHome - r.takeHome) / 10000).toFixed(1) + '万円</strong></p>' + upBars(n, r, opt, (m) => hasPage(m) ? 'nenshu/' + m + '.html' : null) +
+    '<h2>年収と手取りの関係</h2><p class="h2-sub">グラフをなぞると各年収の手取りが見られます</p>' + lineChart(n, opt) +
+    '<h2 id="family">結婚・扶養・年齢で変わる？</h2>' + familyBars(n) +
+    '<h2 id="save">税金を減らす方法</h2>' + saveTiles(r, CTA.furusato, CTA.ideco) +
+    (hasPage(n) ? '<div class="related" style="margin-top:20px"><a href="nenshu/' + n + '.html">年収' + n + '万円の詳しい解説<b>内訳・ポイントを見る →</b></a></div>' : '');
+  attachCharts($('out'));
+  clearTimeout(timer);
+  timer = setTimeout(() => history.replaceState(null, '', '?income=' + n), 300);
+}
+$('slider').addEventListener('input', () => { $('income').value = $('slider').value; render(); });
+['income', 'over40', 'spouse', 'dependents'].forEach((id) => $(id).addEventListener('input', render));
+render();
+</script>`;
+  return layout({
+    title: `手取り計算ツール【${RULES.label}対応】年収から手取り・家賃の目安・節税額まで｜${config.siteName}`,
+    description: `年収を入れるだけで手取り額、家賃の目安、年収アップで増える手取り、結婚・扶養での違い、ふるさと納税・iDeCoの節税額がひと目でわかる無料ツール。${RULES.label}の基礎控除引き上げ・子ども・子育て支援金に対応。`,
+    path: '', body,
   });
 }
 
@@ -377,74 +525,6 @@ ${sections}
   });
 }
 
-// ─── トップ（計算ツール） ──────────────────────────────────
-function indexPage() {
-  const popular = [300, 400, 500, 600, 700, 800, 1000, 1200, 1500];
-  const body = `
-<h1>手取り計算ツール【${RULES.label}】</h1>
-<p class="lead">年収を入れるだけで、手取りと税金・社会保険料の内訳、年収が上がったときに増える手取りがわかります。2026年の基礎控除の引き上げにも対応しています。</p>
-<form class="calc box" id="calc" onsubmit="return false">
-  <div>
-    <label for="income">年収（額面）</label>
-    <div class="inrow"><input id="income" type="number" inputmode="decimal" min="100" max="5000" step="1" value="500"><span>万円</span></div>
-  </div>
-  <div class="checks">
-    <label><input id="over40" type="checkbox">40〜64歳</label>
-    <label><input id="spouse" type="checkbox">配偶者を扶養（収入なし）</label>
-    <label>16歳以上の扶養親族
-      <select id="dependents"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select>人</label>
-  </div>
-</form>
-<div id="out" aria-live="polite"></div>
-${adSlot()}
-<h2>よく見られている年収</h2>
-<div class="chips">${popular.map((n) => `<a href="${SITE}/nenshu/${n}.html">年収${n}万円</a>`).join('')}<a href="${SITE}/nenshu/">一覧を見る →</a></div>
-<h2>2026年の注目ポイント</h2>
-<ul class="points">
-<li>所得税の基礎控除が最大104万円に（2026・2027年の特例）。年収約${man(WALLS[0].at, 0)}万円を超えると67万円に下がり、<a href="${SITE}/kabe.html">手取りが減る「壁」</a>があります。</li>
-<li>2026年4月分から「子ども・子育て支援金」が健康保険料に上乗せされています。</li>
-</ul>
-<script type="module">
-import { calcTakeHome, yen, man } from './assets/tax.js';
-const $ = (id) => document.getElementById(id);
-const q = new URLSearchParams(location.search);
-if (q.get('income')) $('income').value = q.get('income');
-const pct = (x) => (x * 100).toFixed(1);
-function row(k, v) { return '<tr><td>' + k + '</td><td>' + yen(v) + '円</td><td>' + yen(v / 12) + '円</td></tr>'; }
-function render() {
-  const n = Math.min(5000, Math.max(0, parseFloat($('income').value) || 0));
-  const opt = { over40: $('over40').checked, spouse: $('spouse').checked, dependents: +$('dependents').value };
-  if (n < 100) { $('out').innerHTML = '<p class="warn" style="margin-top:16px">年収100万円以上で計算できます。</p>'; return; }
-  const r = calcTakeHome({ income: n * 10000, ...opt });
-  const ups = [10, 50, 100].map((d) => [d, calcTakeHome({ income: (n + d) * 10000, ...opt })]);
-  const seg = [['手取り', r.takeHome, 'var(--c-take)'], ['社会保険料', r.social, 'var(--c-social)'], ['所得税', r.incomeTax, 'var(--c-it)'], ['住民税', r.residentTax, 'var(--c-rt)']];
-  $('out').innerHTML =
-    '<div class="tiles"><div class="tile main"><div class="k">年間の手取り</div><div class="v">' + man(r.takeHome) + '万円</div></div>' +
-    '<div class="tile"><div class="k">月の手取り</div><div class="v">' + man(r.takeHomeMonthly) + '万円</div></div>' +
-    '<div class="tile"><div class="k">手取り率</div><div class="v">' + pct(r.rate) + '%</div></div></div>' +
-    '<div class="legend">' + seg.map((s) => '<span><i style="background:' + s[2] + '"></i>' + s[0] + '</span>').join('') + '</div>' +
-    '<div class="bar">' + seg.map((s) => '<span style="width:' + (s[1] / r.income * 100) + '%;background:' + s[2] + '"></span>').join('') + '</div>' +
-    '<div class="wrap"><table><thead><tr><th>項目</th><th>年額</th><th>月額の目安</th></tr></thead><tbody>' +
-    row('健康保険料' + (opt.over40 ? '（介護保険含む）' : ''), r.health) + row('厚生年金保険料', r.pension) + row('雇用保険料', r.koyou) +
-    row('所得税', r.incomeTax) + row('住民税', r.residentTax) +
-    '<tr class="hl"><td>手取り</td><td>' + yen(r.takeHome) + '円</td><td>' + yen(r.takeHomeMonthly) + '円</td></tr></tbody></table></div>' +
-    '<h2>年収が上がると</h2><div class="wrap"><table><thead><tr><th>年収</th><th>手取り（年）</th><th>増える手取り</th></tr></thead><tbody>' +
-    ups.map((u) => '<tr><td>' + (n + u[0]) + '万円（+' + u[0] + '万）</td><td>' + man(u[1].takeHome) + '万円</td><td>' + (u[1].takeHome >= r.takeHome ? '+' : '') + man(u[1].takeHome - r.takeHome) + '万円</td></tr>').join('') +
-    '</tbody></table></div>' +
-    (r.furusato ? '<p style="margin-top:12px">ふるさと納税の上限の目安：<strong>約' + man(r.furusato) + '万円</strong></p>' : '') +
-    (Number.isInteger(n) && n >= ${PAGE_MIN} && n <= ${PAGE_MAX} && n % ${PAGE_STEP} === 0 ? '<p><a href="nenshu/' + n + '.html">年収' + n + '万円の詳しい解説を見る →</a></p>' : '');
-  history.replaceState(null, '', '?income=' + n);
-}
-['income', 'over40', 'spouse', 'dependents'].forEach((id) => $(id).addEventListener('input', render));
-render();
-</script>`;
-  return layout({
-    title: `手取り計算ツール【${RULES.label}対応】年収から手取り・税金を計算｜${config.siteName}`,
-    description: `年収を入れるだけで手取り額、社会保険料・所得税・住民税の内訳、年収アップで増える手取り、ふるさと納税の上限目安がわかる無料ツール。${RULES.label}の基礎控除引き上げ・子ども・子育て支援金に対応。`,
-    path: '', body,
-  });
-}
-
 // ─── 計算方法・プライバシー ────────────────────────────────
 function aboutPage() {
   const body = `
@@ -483,6 +563,7 @@ function privacyPage() {
 rmSync(DIST, { recursive: true, force: true });
 mkdirSync(join(DIST, 'assets'), { recursive: true });
 copyFileSync(join(ROOT, 'src/tax.js'), join(DIST, 'assets/tax.js'));
+copyFileSync(join(ROOT, 'src/view.js'), join(DIST, 'assets/view.js'));
 
 write('index.html', indexPage());
 write('nenshu/index.html', nenshuIndex());

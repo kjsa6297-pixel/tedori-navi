@@ -3,8 +3,25 @@
   "siteName": "手取りナビ",
   "adsenseClient": "",
   "affiliates": {
-    "furusato": { "url": "", "label": "ふるさと納税の返礼品を探す" },
-    "ideco": { "url": "", "label": "iDeCo・NISAの口座を比較する" },
-    "career": { "url": "", "label": "年収アップの転職相談をする" }
-  }
+    "furusato": {
+      "url": "",
+      "label": "ふるさと納税の返礼品を探す"
+    },
+    "ideco": {
+      "url": "",
+      "label": "iDeCo・NISAの口座を比較する"
+    },
+    "career": {
+      "url": "",
+      "label": "年収アップの転職相談をする"
+    }
+  },
+  "gaMeasurementId": "",
+  "nextOrder": [
+    "rent",
+    "up",
+    "family",
+    "furusato",
+    "ideco"
+  ]
 }

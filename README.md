@@ -53,4 +53,6 @@ npm run build   # dist/ にサイトを生成
 npx serve dist  # ローカル確認（任意）
 ```
 
+画面部品は `src/view.js`、「次に知りたいこと」の並び順は `site.config.json` の `nextOrder` で変えられます。GA4 の測定ID（`gaMeasurementId`）を設定すると、どのカードが押されたか（`next_click`）を計測できます。
+
 計算の前提（賞与なし、協会けんぽ東京、など）は `src/tax.js` 冒頭と `/about.html` に記載しています。
