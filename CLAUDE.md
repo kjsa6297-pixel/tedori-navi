@@ -20,5 +20,8 @@
 - `npm run build` ビルド（`SITE_URL=http://localhost:8765 npm run build` でローカル確認用）
 - `cd dist && python3 -m http.server 8765` でプレビュー
 
+## 注意
+- `static/google877b994e362b25c4.html` は Search Console の所有権確認ファイル。削除すると確認が外れる
+
 ## 公開
 main への push で GitHub Actions がテスト→ビルド→Pages 公開。テストが落ちると公開されない。
