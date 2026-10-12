@@ -7,10 +7,11 @@
 - **確認モード**（`site.config.json` の `promo.auto: false`）：投稿案が GitHub の Issue に届く → 内容がよければ `承認` ラベルを付ける → 自動で投稿され、Issue にリンクが付いて閉じる
 - **自動モード**（`promo.auto: true`）：作った投稿案をそのまま投稿。記事は note 貼り付け用の Issue だけ作る
 - note は公式の投稿APIがなく自動投稿は規約上のリスクがあるため、**貼り付けは手作業**
+- **𝕏 は無料でも使える**：API を設定しなくても、投稿案の Issue に「📱 𝕏 で投稿する」リンクが付く。タップすると文面入りの投稿画面が開くので「ポスト」を押すだけ。API（有料）を設定した場合だけ完全自動になる
 
 ## 初回設定（オーナー）
 
-### 1. 𝕏 API（有料・従量課金）
+### 1. 𝕏 API（有料・従量課金。**任意**：使わなければタップ投稿で無料）
 1. https://developer.x.com でデベロッパー登録し、App を作る
 2. App の「User authentication settings」で権限を **Read and write** にする
 3. 「Keys and tokens」で次の4つを発行（権限を変えた後に Access Token を発行し直す）

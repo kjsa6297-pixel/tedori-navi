@@ -36,7 +36,9 @@ if (cmd === 'draft') {
   ensureLabels();
   const d = JSON.parse(node('draft', kind));
   const label = kind === 'x' ? 'promo:x' : 'promo:article';
-  if (!auto) {
+  // 𝕏 API が未設定なら、自動モードでも「タップで投稿」リンク付きの Issue にする（無料）
+  const hasX = ['X_API_KEY', 'X_API_SECRET', 'X_ACCESS_TOKEN', 'X_ACCESS_SECRET'].every((k) => process.env[k]);
+  if (!auto || (kind === 'x' && !hasX)) {
     console.log(createIssue(`${kind === 'x' ? '𝕏' : '記事'}：${d.title.slice(0, 60)}`, d.body, label));
   } else {
     const file = join(ROOT, '.promo-text.md');
