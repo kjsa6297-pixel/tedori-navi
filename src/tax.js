@@ -120,8 +120,9 @@ const floor1000 = (n) => Math.max(0, Math.floor(n / 1000) * 1000);
  * @param {boolean} [p.over40] 40〜64歳（介護保険あり）
  * @param {boolean} [p.spouse] 配偶者控除（配偶者の収入なし）
  * @param {number} [p.dependents] 16歳以上の扶養親族の人数
+ * @param {number} [p.ideco] iDeCoの掛金（年額・円）。小規模企業共済等掛金控除として全額を所得から差し引く
  */
-export function calcTakeHome({ income, bonus = 0, pref = '東京都', over40 = false, spouse = false, dependents = 0 }) {
+export function calcTakeHome({ income, bonus = 0, pref = '東京都', over40 = false, spouse = false, dependents = 0, ideco = 0 }) {
   income = Math.max(0, Math.round(income));
   bonus = Math.min(income, Math.max(0, Math.round(bonus)));
   const monthly = (income - bonus) / 12;
@@ -143,12 +144,12 @@ export function calcTakeHome({ income, bonus = 0, pref = '東京都', over40 = f
   // 所得税
   const totalIncome = employmentIncome(income, 740000, 2200000);
   const [spIT, spRT, spDiff] = spouse ? spouseDeduction(totalIncome) : [0, 0, 0];
-  const taxableIT = floor1000(totalIncome - social - basicDeductionIT(totalIncome) - spIT - 380000 * dependents);
+  const taxableIT = floor1000(totalIncome - social - ideco - basicDeductionIT(totalIncome) - spIT - 380000 * dependents);
   const itax = incomeTax(taxableIT);
 
   // 住民税（2026年の所得にかかる令和9年度分。給与所得控除の最低保障は所得税と同じ74万円）
   const totalIncomeRT = employmentIncome(income, 740000, 2200000);
-  const taxableRT = floor1000(totalIncomeRT - social - basicDeductionRT(totalIncomeRT) - spRT - 330000 * dependents);
+  const taxableRT = floor1000(totalIncomeRT - social - ideco - basicDeductionRT(totalIncomeRT) - spRT - 330000 * dependents);
   const family = (spouse ? 1 : 0) + dependents;
   const noIncomeLevy = family ? totalIncomeRT <= 350000 * (family + 1) + 420000 : totalIncomeRT <= 450000;
   const noPerCapita = family ? totalIncomeRT <= 350000 * (family + 1) + 310000 : totalIncomeRT <= 450000;
@@ -171,6 +172,7 @@ export function calcTakeHome({ income, bonus = 0, pref = '東京都', over40 = f
     : 0;
 
   return {
+    input: { income, bonus, pref, over40, spouse, dependents, ideco },
     income, monthly: Math.round(monthly), healthStd, totalIncome,
     health, pension, koyou, social,
     incomeTax: itax, residentTax: rtax, tax: itax + rtax,
@@ -184,6 +186,12 @@ export function calcTakeHome({ income, bonus = 0, pref = '東京都', over40 = f
 // 所得控除が1円増えたときに軽くなる税金の割合（iDeCo などの節税額の目安）
 export function deductionValue(r) {
   return r.marginalIT * 1.021 + (r.taxableRT > 0 ? RULES.residentRate : 0);
+}
+
+// iDeCoの掛金（年額）で軽くなる所得税＋住民税（円）。課税所得を超える分は節税にならないことも反映
+// r は calcTakeHome の結果
+export function idecoSaving(r, annual) {
+  return r.tax - calcTakeHome({ ...r.input, ideco: (r.input.ideco || 0) + annual }).tax;
 }
 
 export const yen = (n) => Math.round(n).toLocaleString('ja-JP');

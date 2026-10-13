@@ -1,6 +1,6 @@
 // 「明日話せるお金の豆知識」。数字はすべて計算エンジンから出す（手で書かない）。
 // 制度そのものの説明は、出典で確認できたものだけを書く。新しい話題を足すときも同じルールで。
-import { calcTakeHome, healthStandard, pensionStandard, PREF_HEALTH, RULES, yen, man } from './tax.js';
+import { calcTakeHome, idecoSaving, healthStandard, pensionStandard, PREF_HEALTH, RULES, yen, man } from './tax.js';
 
 const calc = (n, opt = {}) => calcTakeHome({ income: n * 10000, ...opt });
 const pct = (x) => `${Math.round(x * 100)}%`;
@@ -36,7 +36,7 @@ export function topics() {
     - (half(healthStandard(300000), RULES.healthRate + RULES.kodomoRate) + half(pensionStandard(300000), RULES.pensionRate));
   const bonusDiff = calc(500).takeHome - calc(500, { bonus: 1250000 }).takeHome;
   const r500 = calc(500);
-  const ideco = Math.round(240000 * (r500.marginalIT * 1.021 + 0.1));
+  const ideco = idecoSaving(r500, 240000);
   const cap = Math.round(650000 * RULES.pensionRate / 2);
   const sp = calc(500, { spouse: true }).takeHome - calc(500).takeHome;
 

@@ -5,9 +5,11 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, cpSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { calcTakeHome, RULES, yen, man } from '../src/tax.js';
+import { calcTakeHome, idecoSaving, RULES, yen, man } from '../src/tax.js';
 import { topics } from '../src/topics.js';
 import { PART_WALLS, WALL_TYPES, IMPACT_LABEL } from '../src/walls.js';
+import { guides } from '../src/guides.js';
+import { CHARS, talk } from '../src/chars.js';
 import { hero, nextItems, nextCards, lifeTiles, upBars, lineChart, familyBars, conditionBars, avgBars, saveTiles, PREFS, AVERAGES } from '../src/view.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -284,6 +286,107 @@ fieldset.offer legend{font-weight:800;padding:0 6px}
 .cmp-h{font-weight:800}
 .cmp-v{font-size:30px;font-weight:900;line-height:1.3}
 .cmp-s{font-size:13px;color:var(--sub);margin-bottom:10px}
+/* トレンド解説：バナー */
+.banner{position:relative;display:grid;grid-template-columns:1fr 96px;gap:8px 14px;align-items:center;background:linear-gradient(135deg,var(--accent-soft),var(--surface) 70%);border:1px solid var(--line);border-radius:22px;padding:20px 18px;margin:8px 0 18px;overflow:hidden}
+.banner::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:var(--s4);opacity:.12}
+.banner-t h1{font-size:clamp(22px,5.6vw,30px);margin:4px 0 6px}
+.banner-t p{font-size:14px;color:var(--sub);margin:0}
+.banner-ic{font-size:30px;line-height:1}
+.banner-av{width:96px;height:96px;z-index:1;animation:bob 3s ease-in-out infinite}
+.banner-av svg,.tk-av svg,.av svg,.hb-av svg{width:100%;height:100%;display:block}
+@keyframes bob{50%{transform:translateY(-5px) rotate(-4deg)}}
+@media (prefers-reduced-motion:reduce){.banner-av{animation:none}}
+.banner-stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.banner-stats div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px 10px;line-height:1.3}
+.banner-stats small{display:block;font-size:12px}
+.banner-stats b{font-size:clamp(17px,4.6vw,22px);font-weight:900;color:var(--accent)}
+@media (max-width:420px){.banner{grid-template-columns:1fr 72px}.banner-av{width:72px;height:72px}}
+/* 会話 */
+.talk{display:grid;gap:12px;margin:18px 0}
+.tk{display:flex;gap:10px;align-items:flex-start}
+.tk.r{flex-direction:row-reverse}
+.tk-av{flex:0 0 52px;height:52px}
+.tk-b{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:9px 14px 10px;font-size:15px;max-width:min(520px,82%)}
+.tk.l .tk-b{border-top-left-radius:4px;background:color-mix(in srgb,var(--s4) 10%,var(--surface))}
+.tk.r .tk-b{border-top-right-radius:4px}
+.tk-n{display:block;font-size:11px;font-weight:700;color:var(--muted);line-height:1.4}
+.tk-b b{color:var(--alert);background:linear-gradient(transparent 62%,color-mix(in srgb,var(--s4) 35%,transparent) 62%)}
+.av{display:inline-block;vertical-align:middle}
+/* 図解 */
+figure.dg{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 14px 8px;margin:8px 0}
+figure.dg svg{width:100%;height:auto;display:block}
+.dg-h{font-size:14px;font-weight:800;fill:var(--text)}
+.dg-in{font-size:14px;font-weight:800;fill:#fff}
+.dg-in2{font-size:12px;font-weight:700;fill:var(--text)}
+.dg-s{font-size:11px;fill:var(--sub)}
+.dg-num{font-size:18px;font-weight:900;fill:#fff}
+.dg-h2{font-size:14px;font-weight:800;fill:var(--text)}
+.dg-s2{font-size:12px;fill:var(--sub)}
+.lim{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:8px 0}
+.lim-row{padding:8px 0;border-bottom:1px dashed var(--line)}
+.lim-row:last-of-type{border-bottom:0}
+.lim-k{font-size:14px;font-weight:700;margin-bottom:4px}
+.lim-bars{display:grid;gap:4px}
+.lim-bar{height:24px;border-radius:6px;display:flex;align-items:center;min-width:fit-content}
+.lim-bar span{font-size:12px;font-weight:800;padding:0 8px;white-space:nowrap}
+.lim-bar.old{background:var(--grid);color:var(--sub)}
+.lim-bar.new{background:var(--s2);color:#fff}
+.lim-row small{font-size:11px}
+ol.tl{list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 16px 6px 18px;margin:8px 0;position:relative}
+ol.tl li{position:relative;padding:0 0 14px 30px;display:flex;flex-direction:column;line-height:1.45}
+ol.tl li::before{content:"";position:absolute;left:0;top:3px;width:16px;height:16px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px var(--surface)}
+ol.tl li:not(:last-child)::after{content:"";position:absolute;left:7px;top:20px;bottom:0;width:2px;background:var(--line)}
+ol.tl b{font-size:17px;font-weight:900;color:var(--c)}
+ol.tl span{font-size:14px;color:var(--sub)}
+ol.tl .s1{--c:var(--s1)}ol.tl .s2{--c:var(--s2)}ol.tl .s3{--c:var(--s3)}ol.tl .s4{--c:var(--s4)}
+/* シミュレーター */
+.sim{margin:24px 0;border:2px solid var(--accent)}
+.sim .sim-h{margin:0 0 10px;font-size:18px}
+.sim-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.sim-f label{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--sub)}
+.sim-f input,.sim-f select{width:100%;font-size:22px;font-weight:800;padding:6px 10px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.sim-f input:focus{outline:none;border-color:var(--accent)}
+.sim-f b{color:var(--text);white-space:nowrap}
+.tiles.four{grid-template-columns:repeat(4,1fr);margin-bottom:12px}
+@media (max-width:560px){.tiles.four{grid-template-columns:1fr 1fr}}
+.tiles.four .tile .v{font-size:clamp(18px,4.8vw,24px)}
+.tile.main{background:var(--s3);border-color:transparent;color:#fff}
+.tile.main .k{color:#fff;opacity:.9}
+/* ポイント・ニュース・FAQ */
+.pt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.pt{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;border-top:4px solid var(--s1)}
+.pt:nth-child(2){border-top-color:var(--s3)}.pt:nth-child(3){border-top-color:var(--s4)}.pt:nth-child(4){border-top-color:var(--s2)}
+.pt-i{font-size:26px;line-height:1;display:block;margin-bottom:6px}
+.pt b{display:block;font-size:16px;line-height:1.45;margin-bottom:4px}
+.pt p{font-size:14px;color:var(--sub);margin:0}
+ul.news{list-style:none;display:grid;gap:8px}
+ul.news li{position:relative;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--s2);border-radius:12px;padding:10px 14px;font-size:14px}
+details.faq{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+details.faq summary{cursor:pointer;font-weight:700;padding:12px 14px;font-size:15px;list-style:none}
+details.faq summary::before{content:"Q.";color:var(--accent);font-weight:900;margin-right:6px}
+details.faq[open] summary{border-bottom:1px dashed var(--line)}
+details.faq p{padding:10px 14px 4px;font-size:14px;margin:0 0 6px}
+/* トレンド一覧・トップのトレンド */
+.guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+@media (max-width:560px){.guide-grid{grid-template-columns:1fr}}
+.guide-card{display:flex;flex-direction:column;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;text-decoration:none;color:var(--text);transition:transform .15s,border-color .15s}
+.guide-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.gc-i{font-size:34px;line-height:1}
+.guide-card b{font-size:17px;line-height:1.45}
+.guide-card small{font-size:13px}
+.gc-stats{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.gc-stats em{font-style:normal;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 9px}
+.trend-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 4px}
+@media (max-width:560px){.trend-strip{grid-template-columns:1fr 1fr}}
+.trend-strip a{display:flex;flex-direction:column;gap:2px;border-radius:16px;padding:12px;text-decoration:none;color:#fff;line-height:1.35}
+.trend-strip a:nth-child(1){background:var(--s1)}.trend-strip a:nth-child(2){background:var(--s3)}.trend-strip a:nth-child(3){background:var(--s2)}.trend-strip a:nth-child(4){background:var(--s4);color:#2a1d00}.trend-strip a:nth-child(4) small{color:#2a1d00}
+.trend-strip .ti{font-size:24px}
+.trend-strip b{font-size:15px}
+.trend-strip small{color:#fff;opacity:.92;font-size:12px}
+.hello{display:flex;gap:12px;align-items:center;margin:4px 0 12px}
+.hello .hb-av{flex:0 0 64px;height:64px}
+.hello h1{margin:0}
+.hello p{margin:0}
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center;padding:24px 16px 100px}
 footer a{color:var(--muted)}
 `;
@@ -319,7 +422,7 @@ ${head}
 <header class="top"><div>
 <a class="logo" href="${SITE}/">💴 手取り<b>ナビ</b></a>
 <a class="tt-btn" href="${SITE}/topics/">💡 今日の豆知識</a>
-<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">早見表</a><a href="${SITE}/hikaku.html">2社比較</a><a href="${SITE}/part-kabe.html">年収の壁</a></nav>
+<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">早見表</a><a href="${SITE}/guide/">🔥トレンド</a><a href="${SITE}/part-kabe.html">年収の壁</a><a href="${SITE}/hikaku.html">2社比較</a></nav>
 </div></header>
 <main>
 ${body}
@@ -438,6 +541,19 @@ function points(n, r) {
   return list.map(([i, t]) => `<div class="callout${i === '⚠️' ? '' : ' info'}"><span class="ci">${i}</span><div>${t}</div></div>`).join('');
 }
 
+// 年収別ページのキャラクター会話。数字はすべて計算エンジンから出す
+function senseiTalk(n, r) {
+  const now = idecoSaving(r, 23000 * 12);
+  const next = idecoSaving(r, 62000 * 12);
+  const answer = next >= 10000
+    ? `iDeCoなら、会社員（企業年金なし）は<b>2027年から掛金の上限が月6.2万円</b>に上がる。年収${n}万円なら節税額は今の上限で年約${yen(now)}円、新しい上限なら<b>年約${yen(next)}円</b>じゃ。<a href="${SITE}/guide/ideco.html">iDeCoの図解 →</a>`
+    : `この年収だと税金が少ないから、iDeCoの節税効果は小さめじゃ。増えた分に税金がかからない<b>新NISA</b>で、少しずつ積み立てるのがおすすめ。<a href="${SITE}/guide/nisa.html">新NISAの図解 →</a>`;
+  return talk([
+    ['yuto', `年収${n}万円で、手取りを増やすにはどうしたらいいですか？`],
+    ['sensei', answer],
+  ]);
+}
+
 function nenshuPage(n) {
   const r = calc(n);
   const up50 = calc(n + 50);
@@ -454,6 +570,7 @@ function nenshuPage(n) {
 <p class="lead">${RULES.label}の税金・社会保険料で計算（独身・40歳未満・賞与なし）</p>
 ${hero(n, r)}
 ${nextCards(nextItems(n, r), NEXT_ORDER, extra)}
+${senseiTalk(n, r)}
 
 <h2 id="life">暮らしの目安</h2>
 <p class="h2-sub">月の手取り${man(r.takeHomeMonthly)}万円で考えると</p>
@@ -519,12 +636,17 @@ ${[[n - 50, '−50万円'], [n + 50, '+50万円'], [n - 10, '−10万円'], [n +
 const prefOptions = (sel = '東京都') => PREFS.map((p) => `<option${p === sel ? ' selected' : ''}>${p}</option>`).join('');
 
 // ─── トップ（計算ツール） ──────────────────────────────────
+function trendStrip() {
+  const sub = { nisa: '年360万円まで非課税', ideco: '2027年〜月6.2万円に', 'kodomo-nisa': '2027年スタート' };
+  return `<div class="trend-strip">${GUIDES.map((g) => `<a href="${SITE}/guide/${g.slug}.html"><span class="ti">${g.icon}</span><b>${esc(g.short)}</b><small>${sub[g.slug] || ''}</small></a>`).join('')}<a href="${SITE}/part-kabe.html"><span class="ti">🧱</span><b>年収の壁</b><small>パート・学生の一覧</small></a></div>`;
+}
+
 function indexPage() {
   const popular = [300, 400, 500, 600, 700, 800, 1000, 1200, 1500];
   const ctas = { furusato: cta('furusato'), ideco: cta('ideco') };
   const body = `
-<h1>手取り計算ツール【${RULES.label}】</h1>
-<p class="lead">年収か月給を入れるだけ。手取り・家賃の目安・年収アップで増える額・平均との比較・節税額までひと目でわかります。入力内容は送信されません。</p>
+<div class="hello"><span class="hb-av">${CHARS.sensei.svg}</span><div><h1>手取り計算ツール【${RULES.label}】</h1>
+<p class="lead">年収か月給を入れるだけ。手取り・家賃の目安・節税額までひと目でわかります。入力内容は送信されません。</p></div></div>
 <form class="calc" id="calc" onsubmit="return false">
   <div class="seg mode">
     <label><input type="radio" name="mode" value="year" checked>年収で入力</label>
@@ -551,6 +673,9 @@ function indexPage() {
   </div>
 </form>
 <div id="out" aria-live="polite"></div>
+<h2>🔥 いま話題のお金の制度</h2>
+<p class="h2-sub">2027年はiDeCoの上限アップとこどもNISAのスタートが重なる年</p>
+${trendStrip()}
 ${todayTopicCard()}
 ${adSlot()}
 <div class="related" style="margin-top:24px">
@@ -889,6 +1014,124 @@ ${wallCards(k, v.walls)}
   });
 }
 
+// ─── トレンド解説（新NISA・iDeCo・こどもNISA） ─────────────
+const GUIDES = guides();
+
+const SIMS = {
+  nisa: {
+    form: `<div class="sim-f">
+  <label>毎月の積立<span class="inrow"><input id="g-m" type="number" min="0.1" max="30" step="0.1" value="3"><b>万円</b></span></label>
+  <label>積み立てる年数<span class="inrow"><input id="g-y" type="number" min="1" max="50" step="1" value="20"><b>年</b></span></label>
+  <label>想定の利回り（年）<span class="inrow"><input id="g-r" type="number" min="0" max="10" step="0.5" value="3"><b>%</b></span></label>
+</div>`,
+    js: `var m=num('g-m')*10000,y=Math.round(num('g-y')),r=num('g-r')/100/12,n=y*12;
+  var fv=r?m*(Math.pow(1+r,n)-1)/r:m*n, p=m*n, g=fv-p, tax=g*0.20315;
+  out.innerHTML=tiles([['積み立てた元本',man(p)+'万円'],[''+y+'年後の金額',man(fv)+'万円'],['増えたお金',man(g)+'万円'],['NISAで払わずに済む税金',man(tax)+'万円','hl']])+
+  bar([[p,'元本','var(--s1)'],[g,'増えた分','var(--s3)']])+
+  '<p class="note">毎月同じ額を積み立て、利回りが一定と仮定した計算（手数料は含まない）。'+(m*12>1200000?'つみたて投資枠は年120万円（月10万円）まで。超える分は成長投資枠を使います。':'')+'</p>';`,
+  },
+  ideco: {
+    form: `<div class="sim-f">
+  <label>年収（額面）<span class="inrow"><input id="g-i" type="number" min="100" max="3000" step="10" value="500"><b>万円</b></span></label>
+  <label>毎月の掛金<span class="inrow"><input id="g-m" type="number" min="5000" max="75000" step="1000" value="23000"><b>円</b></span></label>
+  <label>今の年齢<span class="inrow"><input id="g-a" type="number" min="18" max="64" step="1" value="30"><b>歳</b></span></label>
+  <label>想定の利回り（年）<span class="inrow"><input id="g-r" type="number" min="0" max="10" step="0.5" value="3"><b>%</b></span></label>
+</div>`,
+    js: `var inc=num('g-i')*10000,m=num('g-m'),age=Math.round(num('g-a')),y=Math.max(0,60-age),r=num('g-r')/100/12,n=y*12;
+  var save=idecoSaving(calcTakeHome({income:inc}),m*12);
+  var fv=r?m*(Math.pow(1+r,n)-1)/r:m*n;
+  out.innerHTML=tiles([['1年で軽くなる税金',yen(save)+'円','hl'],['60歳までの節税の合計',man(save*y)+'万円'],['60歳までの元本',man(m*n)+'万円'],['60歳時点の金額（目安）',man(fv)+'万円']])+
+  bar([[m*n,'元本','var(--s1)'],[fv-m*n,'増えた分','var(--s3)'],[save*y,'節税','var(--s4)']])+
+  '<p class="note">節税額は、掛金を差し引く前後の所得税・住民税の差（独身・賞与なしで計算）。'+(m>23000?'<b>会社員（企業年金なし）の上限は2026年12月分まで月2.3万円、2027年1月分から月6.2万円。</b>':'')+'</p>';`,
+  },
+  kodomo: {
+    form: `<div class="sim-f">
+  <label>毎月の積立<span class="inrow"><input id="g-m" type="number" min="1000" max="50000" step="1000" value="10000"><b>円</b></span></label>
+  <label>子どもの今の年齢<span class="inrow"><input id="g-a" type="number" min="0" max="17" step="1" value="0"><b>歳</b></span></label>
+  <label>想定の利回り（年）<span class="inrow"><input id="g-r" type="number" min="0" max="10" step="0.5" value="3"><b>%</b></span></label>
+</div>`,
+    js: `var m=Math.min(50000,num('g-m')),age=Math.round(num('g-a')),r=num('g-r')/100/12;
+  function at(target){var v=0,p=0;for(var k=0;k<(target-age)*12;k++){var c=p+m<=6000000?m:Math.max(0,6000000-p);p+=c;v=v*(1+r)+c;}return [v,p]}
+  var a12=age<12?at(12):null,a18=at(18);
+  out.innerHTML=tiles([a12?['12歳のとき',man(a12[0])+'万円']:['12歳のとき','—'],['18歳のとき',man(a18[0])+'万円','hl'],['積み立てた元本',man(a18[1])+'万円'],['払わずに済む税金',man((a18[0]-a18[1])*0.20315)+'万円']])+
+  bar([[a18[1],'元本','var(--s1)'],[a18[0]-a18[1],'増えた分','var(--s3)']])+
+  '<p class="note">月5万円（年60万円）まで。総額600万円に達したら積立が止まる計算。制度開始（2027年1月）からの積立を想定。</p>';`,
+  },
+};
+
+function simBlock(key) {
+  const s = SIMS[key];
+  return `
+<section class="sim card">
+  <h2 class="sim-h">🧮 シミュレーター</h2>
+  ${s.form}
+  <div id="g-out"></div>
+</section>
+<script type="module">
+import { calcTakeHome, idecoSaving, yen, man } from '../assets/tax.js';
+const $ = (id) => document.getElementById(id);
+const num = (id) => Math.max(0, parseFloat($(id).value) || 0);
+const out = $('g-out');
+const tiles = (t) => '<div class="tiles four">' + t.map((x) => '<div class="tile' + (x[2] ? ' main' : '') + '"><div class="k">' + x[0] + '</div><div class="v">' + x[1] + '</div></div>').join('') + '</div>';
+const bar = (segs) => { const tot = segs.reduce((a, s) => a + Math.max(0, s[0]), 0) || 1; return '<div class="split">' + segs.map((s) => '<span style="flex:' + Math.max(0, s[0]) + ' 0 0;background:' + s[2] + '"></span>').join('') + '</div><ul class="split-legend">' + segs.map((s) => '<li><i style="background:' + s[2] + '"></i>' + s[1] + '<b>' + man(Math.max(0, s[0])) + '万</b></li>').join('') + '</ul>'; };
+function render() { ${s.js} }
+document.querySelectorAll('.sim input').forEach((el) => el.addEventListener('input', render));
+render();
+</script>`;
+}
+
+function guidePage(g) {
+  const others = GUIDES.filter((x) => x.slug !== g.slug);
+  const body = `
+<div class="crumb"><a href="${SITE}/">手取りナビ</a> › <a href="${SITE}/guide/">お金のトレンド</a> › ${esc(g.short)}</div>
+<section class="banner">
+  <div class="banner-t"><span class="banner-ic">${g.icon}</span><h1>${esc(g.title)}</h1><p>${esc(g.lead)}</p></div>
+  <div class="banner-av">${CHARS.sensei.svg}</div>
+  <div class="banner-stats">${g.stats.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
+</section>
+${g.talk}
+<h2>図でわかる</h2>
+${g.diagram}
+${simBlock(g.sim)}
+<h2>ここだけ押さえればOK</h2>
+<div class="pt-grid">${g.points.map(([i, t, d]) => `<div class="pt"><span class="pt-i">${i}</span><b>${esc(t)}</b><p>${esc(d)}</p></div>`).join('')}</div>
+<h2>📰 2026年の最新トピック</h2>
+<ul class="news">${g.news.map((n) => `<li>${n}</li>`).join('')}</ul>
+<h2>⚠️ 気をつけたいこと</h2>
+<ul class="points">${g.cautions.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
+${cta(g.cta)}
+<h2>よくある質問</h2>
+${g.faq.map(([q, a]) => `<details class="faq"><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}
+<p class="note" style="margin-top:16px">出典：${g.src.map(([n, u]) => `<a href="${esc(u)}" rel="noopener">${esc(n)}</a>`).join('／')}（${RULES.updated}時点の情報。制度の詳細は公式発表で確認してください）</p>
+<h2>ほかのトレンドも読む</h2>
+<div class="related">${others.map((o) => `<a href="${SITE}/guide/${o.slug}.html">${o.icon} ${esc(o.short)}<b>${esc(o.title.split('【')[0].slice(0, 22))}… →</b></a>`).join('')}</div>`;
+  const faqLd = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: g.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
+  return layout({
+    title: `${g.title}｜${config.siteName}`, description: g.lead, path: `guide/${g.slug}.html`, body,
+    head: `<script type="application/ld+json">${JSON.stringify(faqLd)}</script>`,
+    sticky: `<a class="p" href="#g-out">シミュレーターで試す</a>`,
+  });
+}
+
+function guideIndex() {
+  const body = `
+<div class="crumb"><a href="${SITE}/">手取りナビ</a> › お金のトレンド</div>
+<section class="banner">
+  <div class="banner-t"><span class="banner-ic">🔥</span><h1>2026年 お金のトレンド</h1><p>新NISA・iDeCoの大改正・こどもNISA。いま知っておきたい制度を、図とキャラクターの会話でやさしく解説します。</p></div>
+  <div class="banner-av">${CHARS.sensei.svg}</div>
+</section>
+${talk([['sensei', '2027年は<b>iDeCoの上限アップ</b>と<b>こどもNISAのスタート</b>が重なる大きな年じゃ。今のうちに仕組みを知っておこう！']])}
+<div class="guide-grid">
+${GUIDES.map((g) => `<a class="guide-card" href="${SITE}/guide/${g.slug}.html"><span class="gc-i">${g.icon}</span><b>${esc(g.title)}</b><small>${esc(g.lead)}</small><span class="gc-stats">${g.stats.map(([k, v]) => `<em>${k}：${v}</em>`).join('')}</span></a>`).join('')}
+<a class="guide-card" href="${SITE}/part-kabe.html"><span class="gc-i">🧱</span><b>扶養内パートの年収の壁【2026年版】</b><small>103万・106万・130万…本当に気をつけるべき壁はどれ？</small></a>
+</div>`;
+  return layout({
+    title: `2026年 お金のトレンド｜新NISA・iDeCo改正・こどもNISAを図解｜${config.siteName}`,
+    description: '新NISA、2027年のiDeCo上限引き上げ（月6.2万円・70歳まで）、2027年開始のこどもNISAを、図解とシミュレーターでわかりやすく解説。',
+    path: 'guide/', body,
+  });
+}
+
 // ─── 年収別一覧（早見表） ──────────────────────────────────
 function nenshuIndex() {
   const rows = pageIncomes.map((n) => {
@@ -1015,6 +1258,7 @@ rmSync(DIST, { recursive: true, force: true });
 mkdirSync(join(DIST, 'assets'), { recursive: true });
 copyFileSync(join(ROOT, 'src/tax.js'), join(DIST, 'assets/tax.js'));
 copyFileSync(join(ROOT, 'src/view.js'), join(DIST, 'assets/view.js'));
+copyFileSync(join(ROOT, 'src/chars.js'), join(DIST, 'assets/chars.js'));
 // static/ のファイル（Search Console の確認用ファイルなど）はそのまま公開する
 if (existsSync(join(ROOT, 'static'))) cpSync(join(ROOT, 'static'), DIST, { recursive: true });
 
@@ -1026,12 +1270,14 @@ write('about.html', aboutPage());
 write('hikaku.html', hikakuPage());
 write('operator.html', operatorPage());
 write('part-kabe.html', partKabePage());
+write('guide/index.html', guideIndex());
+GUIDES.forEach((g) => write(`guide/${g.slug}.html`, guidePage(g)));
 write('topics/index.html', topicsIndex());
 TOPICS.forEach((t, i) => write(`topics/${t.slug}.html`, topicPage(t, i)));
 write('privacy.html', privacyPage());
 write('404.html', layout({ title: 'ページが見つかりません', description: '', path: '404.html', body: `<h1>ページが見つかりません</h1><p><a href="${SITE}/">手取り計算ツールへ戻る</a></p>` }));
 
-const urls = ['', 'nenshu/', 'hikaku.html', 'kabe.html', 'part-kabe.html', 'topics/', ...TOPICS.map((t) => `topics/${t.slug}.html`), 'about.html', 'operator.html', ...pageIncomes.map((n) => `nenshu/${n}.html`)];
+const urls = ['', 'nenshu/', 'hikaku.html', 'kabe.html', 'part-kabe.html', 'guide/', ...GUIDES.map((g) => `guide/${g.slug}.html`), 'topics/', ...TOPICS.map((t) => `topics/${t.slug}.html`), 'about.html', 'operator.html', ...pageIncomes.map((n) => `nenshu/${n}.html`)];
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((u) => `  <url><loc>${SITE}/${u}</loc><lastmod>${RULES.updated}</lastmod></url>`).join('\n')}

@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { calcTakeHome, deductionValue, PREF_HEALTH, RULES, yen, man } from '../../src/tax.js';
+import { calcTakeHome, idecoSaving, PREF_HEALTH, RULES, yen, man } from '../../src/tax.js';
 import { AVERAGES } from '../../src/view.js';
 import { topics } from '../../src/topics.js';
 
@@ -80,7 +80,7 @@ const X_TEMPLATES = [
   (i) => {
     const n = [400, 500, 600, 700, 450, 550, 800, 650][i % 8];
     const r = calc(n);
-    return `年収${n}万円の人が使える節税の目安（2026年・独身）\n\n🎁ふるさと納税の上限：約${man(r.furusato)}万円\n🐷iDeCo月2万円で税金が年${man(240000 * deductionValue(r))}万円軽く\n\n自分の年収で計算👇\n${SITE}/?income=${n}\n#ふるさと納税 #iDeCo`;
+    return `年収${n}万円の人が使える節税の目安（2026年・独身）\n\n🎁ふるさと納税の上限：約${man(r.furusato)}万円\n🐷iDeCo月2万円で税金が年${man(idecoSaving(r, 240000))}万円軽く\n\n自分の年収で計算👇\n${SITE}/?income=${n}\n#ふるさと納税 #iDeCo`;
   },
   (i) => {
     const n = [450, 550, 650, 380, 520, 750, 420, 600, 900][i % 9];
@@ -189,7 +189,7 @@ const ARTICLES = [
         ['所得税', `${yen(r.incomeTax)}円`, `${yen(r.incomeTax / 12)}円`],
         ['住民税', `${yen(r.residentTax)}円`, `${yen(r.residentTax / 12)}円`],
         ['**手取り**', `**${yen(r.takeHome)}円**`, `**${yen(r.takeHomeMonthly)}円**`],
-      ])}\n\n額面の${pct(r.rate)}が手元に残ります。\n\n## 暮らしの目安\n\n- 家賃（手取りの25〜30%）：月${man(r.takeHomeMonthly * 0.25, 1)}〜${man(r.takeHomeMonthly * 0.3, 1)}万円\n- 貯金（手取りの10〜20%）：月${man(r.takeHomeMonthly * 0.1, 1)}〜${man(r.takeHomeMonthly * 0.2, 1)}万円\n\n## 結婚・年齢で変わる\n\n- 配偶者（収入なし）を扶養：年${man(married.takeHome)}万円（${married.takeHome >= r.takeHome ? '+' : '−'}${man(Math.abs(married.takeHome - r.takeHome))}万円）\n- 40歳以上（介護保険料あり）：年${man(over40.takeHome)}万円（−${man(r.takeHome - over40.takeHome)}万円）\n\n## 税金を減らす方法\n\n- ふるさと納税の上限の目安：約${man(r.furusato)}万円\n- iDeCoで月2万円積み立てると、税金が年約${man(240000 * deductionValue(r))}万円軽くなります\n\n## 平均と比べると\n\n${AVERAGES.source}によると、1年を通じて勤務した給与所得者の平均年収は${AVERAGES.rows[0][1]}万円です。年収${n}万円は平均より${n >= AVERAGES.rows[0][1] ? `${n - AVERAGES.rows[0][1]}万円高い` : `${AVERAGES.rows[0][1] - n}万円低い`}水準です。${footer(`nenshu/${n}.html`, `年収${n}万円のグラフ・昇給シミュレーションを見る`)}`,
+      ])}\n\n額面の${pct(r.rate)}が手元に残ります。\n\n## 暮らしの目安\n\n- 家賃（手取りの25〜30%）：月${man(r.takeHomeMonthly * 0.25, 1)}〜${man(r.takeHomeMonthly * 0.3, 1)}万円\n- 貯金（手取りの10〜20%）：月${man(r.takeHomeMonthly * 0.1, 1)}〜${man(r.takeHomeMonthly * 0.2, 1)}万円\n\n## 結婚・年齢で変わる\n\n- 配偶者（収入なし）を扶養：年${man(married.takeHome)}万円（${married.takeHome >= r.takeHome ? '+' : '−'}${man(Math.abs(married.takeHome - r.takeHome))}万円）\n- 40歳以上（介護保険料あり）：年${man(over40.takeHome)}万円（−${man(r.takeHome - over40.takeHome)}万円）\n\n## 税金を減らす方法\n\n- ふるさと納税の上限の目安：約${man(r.furusato)}万円\n- iDeCoで月2万円積み立てると、税金が年約${man(idecoSaving(r, 240000))}万円軽くなります\n\n## 平均と比べると\n\n${AVERAGES.source}によると、1年を通じて勤務した給与所得者の平均年収は${AVERAGES.rows[0][1]}万円です。年収${n}万円は平均より${n >= AVERAGES.rows[0][1] ? `${n - AVERAGES.rows[0][1]}万円高い` : `${AVERAGES.rows[0][1] - n}万円低い`}水準です。${footer(`nenshu/${n}.html`, `年収${n}万円のグラフ・昇給シミュレーションを見る`)}`,
     };
   },
   // 扶養

@@ -1,5 +1,5 @@
 // 画面部品（HTML文字列を返す）。ビルド時（Node）と計算ツール（ブラウザ）の両方で使う。
-import { calcTakeHome, deductionValue, PREF_HEALTH, yen, man } from './tax.js';
+import { calcTakeHome, idecoSaving, PREF_HEALTH, yen, man } from './tax.js';
 
 // 国税庁「令和7年分 民間給与実態統計調査」1年を通じて勤務した給与所得者の平均給与（万円）
 export const AVERAGES = {
@@ -50,7 +50,7 @@ export function nextItems(n, r, opt = {}) {
   const married = calc(n, { ...opt, spouse: true });
   const rentLo = r.takeHomeMonthly * 0.25;
   const rentHi = r.takeHomeMonthly * 0.3;
-  const ideco = Math.round(240000 * deductionValue(r));
+  const ideco = idecoSaving(r, 240000);
   return {
     rent: { icon: '🏠', q: '家賃はいくらまで？', a: `月${man(rentLo, 0)}〜${man(rentHi, 0)}万円`, href: '#life' },
     up: { icon: '📈', q: '年収+50万円なら？', a: `手取り+${man(up50.takeHome - r.takeHome)}万円`, href: '#up' },
@@ -188,7 +188,7 @@ export function lifeTiles(r) {
 }
 
 export function saveTiles(r, ctaFurusato = '', ctaIdeco = '') {
-  const ideco = Math.round(240000 * deductionValue(r));
+  const ideco = idecoSaving(r, 240000);
   return `
 <div class="tiles two">
   <div class="tile"><div class="k">🎁 ふるさと納税の上限（目安）</div><div class="v">${r.furusato ? `${man(r.furusato)}<small>万円</small>` : '—'}</div>

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calcTakeHome, healthStandard, pensionStandard, PREF_HEALTH } from '../src/tax.js';
+import { calcTakeHome, idecoSaving, healthStandard, pensionStandard, PREF_HEALTH } from '../src/tax.js';
 
 // 期待値は制度の計算手順に沿って手計算したもの（計算過程をコメントに残す）
 
@@ -106,4 +106,13 @@ test('住民税：給与収入119万円以下は所得割がかからない（�
   const b = calcTakeHome({ income: 1200000 });
   assert.equal(a.residentTax, 0);
   assert.ok(b.residentTax > 0);
+});
+
+test('iDeCoの節税額：課税所得を超える掛金は節税にならない（年収200万円）', () => {
+  const r = calcTakeHome({ income: 2000000 });
+  // 住民税の課税所得530,000円 → 所得割 53,000−調整控除2,500＝50,500円。所得税はもともと0円
+  assert.equal(r.taxableRT, 530000);
+  assert.equal(idecoSaving(r, 744000), 50500);
+  // 年27.6万円なら課税所得254,000円 → 所得割 25,400−2,500＝22,900円 → 節税27,600円
+  assert.equal(idecoSaving(r, 276000), 27600);
 });

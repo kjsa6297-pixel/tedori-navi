@@ -15,6 +15,8 @@
 - `scripts/build.mjs` 全ページを `dist/` に生成
 - `src/topics.js` 「明日話せるお金の豆知識」。**数字は計算エンジンから出す（手書きしない）、制度の説明は出典で確認できたものだけ**。足したら `test/topics.test.mjs` が通ることを確認
 - `src/walls.js` 扶養内パート・学生の年収の壁（/part-kabe.html）。金額は「所得の基準＋給与所得控除74万円」で換算し、`test/walls.test.mjs` で検算
+- `src/guides.js` トレンド解説（/guide/：新NISA・iDeCo・こどもNISA）。図解はSVG/HTMLの自作、節税額は `idecoSaving()` で計算エンジンから出す。制度が変わったら news・stats と `test/guides.test.mjs` を更新
+- `src/chars.js` キャラクター（コイン先生・ゆうと・みか、SVG自作）と会話部品 `talk()`。外部のイラスト素材は使わない（権利・表示条件の管理を避けるため）
 - `scripts/promo/` 宣伝の自動化（投稿文の生成・𝕏/はてなブログへの投稿）。説明は `docs/PROMO.md`
 - `site.config.json` サイトURL、AdSense・GA4・アフィリエイトリンク、「次に知りたいこと」の並び順（`nextOrder`）
 
