@@ -130,28 +130,26 @@ export function lineChart(n, opt = {}) {
 }
 
 // ─── 家族構成・年齢による違い ─────────────────────────────────
-function diffBars(rows, noteText) {
-  const base = rows[0][1].takeHome;
-  const maxDiff = Math.max(1, ...rows.map(([, r]) => Math.abs(r.takeHome - base)));
+// 条件を変えたときの手取りの違い：「〜すると → 手取り ○万円（±△万）」を理由つきで並べる
+function compareList(baseLabel, base, rows) {
+  const sign = (v) => `${v >= 0 ? '+' : '−'}${man(Math.abs(v))}万円`;
   return `
-<div class="hbars">
-${rows.map(([k, r]) => {
-    const diff = r.takeHome - base;
-    const w = (Math.abs(diff) / maxDiff) * 50;
-    const bar = diff ? `<span class="${diff > 0 ? 'pos' : 'neg'}" style="width:${w}%"></span>` : '';
-    return `<div class="hb-row"><div class="hb-k">${k}</div><div class="hb-bar">${bar}</div><div class="hb-v"><b>${diff ? `${diff > 0 ? '+' : '−'}${man(Math.abs(diff))}万` : '基準'}</b><small>年${man(r.takeHome)}万</small></div></div>`;
+<div class="cl">
+  <div class="cl-base"><span>基準：${baseLabel}</span><b>年${man(base.takeHome)}万円</b></div>
+  ${rows.map(([icon, label, why, r]) => {
+    const d = r.takeHome - base.takeHome;
+    return `<div class="cl-row"><span class="cl-ico">${icon}</span><div class="cl-k"><b>${label}</b><small>${why}</small></div><div class="cl-v ${d > 0 ? 'pos' : d < 0 ? 'neg' : ''}"><b>${d ? sign(d) : '±0'}</b><small>年${man(r.takeHome)}万円</small></div></div>`;
   }).join('')}
-<p class="note"><i class="sw sw-fill"></i>手取りが増える　<i class="sw sw-neg"></i>手取りが減る（${noteText}）</p>
 </div>`;
 }
 
 export function familyBars(n, opt = {}) {
-  return diffBars([
-    ['独身・40歳未満', calc(n, { ...opt, over40: false, spouse: false, dependents: 0 })],
-    ['独身・40歳以上', calc(n, { ...opt, over40: true, spouse: false, dependents: 0 })],
-    ['配偶者を扶養', calc(n, { ...opt, over40: false, spouse: true, dependents: 0 })],
-    ['配偶者＋子1人（16歳以上）', calc(n, { ...opt, over40: false, spouse: true, dependents: 1 })],
-  ], '独身・40歳未満との差、年額');
+  const o = { ...opt, over40: false, spouse: false, dependents: 0 };
+  return compareList('独身・40歳未満', calc(n, o), [
+    ['🎂', '40歳になると', '介護保険料が加わるため', calc(n, { ...o, over40: true })],
+    ['💍', '配偶者（収入なし）を扶養すると', '配偶者控除で税金が減るため', calc(n, { ...o, spouse: true })],
+    ['👨‍👩‍👦', 'さらに16歳以上の子を1人扶養すると', '扶養控除で税金がさらに減るため', calc(n, { ...o, spouse: true, dependents: 1 })],
+  ]);
 }
 
 // 住んでいる地域（健康保険料率）とボーナスの有無による違い
@@ -159,12 +157,11 @@ export function conditionBars(n) {
   const rates = Object.entries(PREF_HEALTH).sort((a, b) => a[1] - b[1]);
   const [lowPref] = rates[0];
   const [highPref] = rates[rates.length - 1];
-  return diffBars([
-    ['東京都・ボーナスなし', calc(n)],
-    [`${lowPref}（料率が最も低い）`, calc(n, { pref: lowPref })],
-    [`${highPref}（料率が最も高い）`, calc(n, { pref: highPref })],
-    ['ボーナスあり（年4か月分）', calc(n, { bonus: n * 10000 * 4 / 16 })],
-  ], '東京都・ボーナスなしとの差、年額');
+  return compareList('東京都・ボーナスなし', calc(n), [
+    ['📍', `${lowPref}で働くと`, '健康保険料率が全国で最も低いため', calc(n, { pref: lowPref })],
+    ['📍', `${highPref}で働くと`, '健康保険料率が全国で最も高いため', calc(n, { pref: highPref })],
+    ['💰', '同じ年収で、ボーナスが年4か月分あると', '社会保険料のかかり方が変わるため', calc(n, { bonus: n * 10000 * 4 / 16 })],
+  ]);
 }
 
 // 平均年収との比較（0から描く棒）

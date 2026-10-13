@@ -60,7 +60,9 @@ small{font-size:.75em;color:var(--sub);font-weight:400}
 .top div{max-width:760px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .logo{font-weight:800;text-decoration:none;color:var(--text);font-size:18px}
 .logo b{color:var(--accent)}
-.top nav{display:flex;gap:14px;font-size:14px;margin-left:auto}
+.top nav{display:flex;gap:14px;font-size:14px}
+.tt-btn{margin-left:auto;background:var(--accent);color:#fff;text-decoration:none;font-weight:800;font-size:15px;padding:8px 14px;border-radius:999px;white-space:nowrap}
+@media (max-width:560px){.top nav{width:100%;justify-content:flex-end}}
 .top nav a{color:var(--sub);text-decoration:none}
 main{max-width:760px;margin:0 auto;padding:16px 16px 96px}
 .crumb{font-size:12px;color:var(--muted);margin-bottom:8px}
@@ -190,6 +192,18 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
 .seg select{font-size:14px;background:transparent;color:var(--text);border:0}
 .ad{margin:28px 0;min-height:100px}
+/* 条件による違い */
+.cl{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.cl-base{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:12px 16px;background:var(--bg);font-size:14px;color:var(--sub)}
+.cl-base b{font-size:17px;color:var(--text)}
+.cl-row{display:grid;grid-template-columns:32px 1fr auto;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
+.cl-ico{font-size:22px;text-align:center}
+.cl-k{display:flex;flex-direction:column;line-height:1.4}
+.cl-k b{font-size:15px}
+.cl-v{text-align:right;display:flex;flex-direction:column;line-height:1.3;white-space:nowrap}
+.cl-v b{font-size:20px;font-weight:900}
+.cl-v.pos b{color:var(--accent)}
+.cl-v.neg b{color:var(--alert)}
 /* 扶養内パートの壁 */
 .wall-hero label.big{font-weight:700;font-size:14px;color:var(--sub)}
 .wall-hero input[type=number]{width:100%;font-size:28px;font-weight:800;padding:8px 12px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text)}
@@ -224,6 +238,15 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .wall.is-passed .passed{display:inline}
 .wall.is-passed{opacity:.75}
 /* 豆知識 */
+.today-full{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:10px}
+.tf-title{font-size:22px;margin:4px 0 0;line-height:1.45}
+ul.backnum{list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+ul.backnum li+li{border-top:1px solid var(--line)}
+ul.backnum a{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;padding:12px 14px;text-decoration:none;color:var(--text)}
+ul.backnum .bn-d{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums}
+ul.backnum .bn-d:empty{display:none}
+ul.backnum .tag{justify-self:start;margin:0}
+ul.backnum b{grid-column:1/-1;font-size:15px;font-weight:700}
 .tag{display:inline-block;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 10px;margin-bottom:6px}
 .doya{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:16px 18px;margin:14px 0}
 .doya-k{font-size:13px;font-weight:700;color:var(--accent)}
@@ -295,7 +318,8 @@ ${head}
 <body>
 <header class="top"><div>
 <a class="logo" href="${SITE}/">💴 手取り<b>ナビ</b></a>
-<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">早見表</a><a href="${SITE}/hikaku.html">2社比較</a><a href="${SITE}/topics/">豆知識</a></nav>
+<a class="tt-btn" href="${SITE}/topics/">💡 今日の豆知識</a>
+<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">早見表</a><a href="${SITE}/hikaku.html">2社比較</a><a href="${SITE}/part-kabe.html">年収の壁</a></nav>
 </div></header>
 <main>
 ${body}
@@ -449,11 +473,11 @@ ${lineChart(n)}
 ${avgBars(n)}
 
 <h2 id="family">結婚・扶養・年齢で変わる？</h2>
-<p class="h2-sub">配偶者（収入なし）を扶養すると税金が減り、40歳からは介護保険料が加わります。</p>
+<p class="h2-sub">独身・40歳未満の人と比べて、手取りがいくら変わるか</p>
 ${familyBars(n)}
 
 <h2 id="area">住んでいる地域・ボーナスで変わる？</h2>
-<p class="h2-sub">健康保険料率は都道府県ごとに違います。ボーナスがあると、同じ年収でも社会保険料が少し変わります。</p>
+<p class="h2-sub">東京都で働く・ボーナスなしの場合と比べて、手取りがいくら変わるか</p>
 ${conditionBars(n)}
 
 <h2 id="save">税金を減らす方法</h2>
@@ -661,6 +685,8 @@ render();
 
 // ─── 明日話せるお金の豆知識 ────────────────────────────────
 const TOPICS = topics();
+// 豆知識を始めた日（これより前の日付はバックナンバーに出さない）
+const TOPIC_LAUNCH = '2026-10-13';
 
 function topicPage(t, i) {
   const prev = TOPICS[(i - 1 + TOPICS.length) % TOPICS.length];
@@ -692,16 +718,54 @@ function topicPage(t, i) {
 }
 
 function topicsIndex() {
+  const N = TOPICS.length;
+  const jst = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const dayIdx = Math.floor(Date.parse(`${jst}T00:00:00Z`) / 86400000);
+  const full = (t, i) => `
+<article class="today-full" data-i="${i}"${i === dayIdx % N ? '' : ' hidden'}>
+  <span class="tag">${esc(t.tag)}</span>
+  <h2 class="tf-title">${esc(t.title)}</h2>
+  <div class="doya"><div class="doya-k">💬 明日、こう話せます</div><p>「${esc(t.doya)}」</p></div>
+  <ol class="steps">${t.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ol>
+  <div class="related" style="margin-top:14px"><a href="${SITE}${t.link[0]}">${esc(t.link[1])}<b>計算ツールで確かめる →</b></a></div>
+  <p class="note">出典：${t.src[1] ? `<a href="${esc(t.src[1])}" rel="noopener">${esc(t.src[0])}</a>` : esc(t.src[0])}</p>
+  <a class="share-x" href="https://x.com/intent/post?text=${encodeURIComponent(`${t.doya}\n${t.title}`)}&url=${encodeURIComponent(`${SITE}/topics/${t.slug}.html`)}" target="_blank" rel="noopener">𝕏 でシェア</a>
+</article>`;
+  const backRows = [];
+  for (let k = 1; k < N; k++) {
+    const i = (((dayIdx - k) % N) + N) % N;
+    backRows.push(`<li><a href="${SITE}/topics/${TOPICS[i].slug}.html"><span class="bn-d"></span><span class="tag">${esc(TOPICS[i].tag)}</span><b>${esc(TOPICS[i].title)}</b></a></li>`);
+  }
   const body = `
-<div class="crumb"><a href="${SITE}/">手取りナビ</a> › 明日話せるお金の豆知識</div>
-<h1>明日話せるお金の豆知識</h1>
-<p class="lead">職場や家族とのちょっとした会話で使える、お金の「へぇ〜」を集めました。数字はすべて${RULES.label}の制度で計算しています。</p>
-<div class="topic-grid">
-${TOPICS.map((t) => `<a class="topic-card" href="${SITE}/topics/${t.slug}.html"><span class="tag">${esc(t.tag)}</span><b>${esc(t.title)}</b><small>${esc(t.doya)}</small></a>`).join('\n')}
-</div>`;
+<div class="crumb"><a href="${SITE}/">手取りナビ</a> › 今日の豆知識</div>
+<h1>💡 今日の豆知識</h1>
+<p class="lead" id="today-date">明日だれかに話したくなる、お金の「へぇ〜」を毎日1本。</p>
+${TOPICS.map(full).join('')}
+<h2 id="backnum-h">バックナンバー</h2>
+<ul class="backnum" id="backnum"></ul>
+<h2>ほかの豆知識</h2>
+<ul class="backnum" id="others">${backRows.join('')}</ul>
+<script>
+(function(){
+  var T=${JSON.stringify(TOPICS.map((t) => ({ slug: t.slug, tag: t.tag, title: t.title })))}, N=T.length;
+  var jst=new Date(Date.now()+9*3600*1000), d0=Math.floor(Date.parse(jst.toISOString().slice(0,10)+'T00:00:00Z')/86400000);
+  var w=['日','月','火','水','木','金','土'];
+  var fmt=function(day){var d=new Date(day*86400000);return (d.getUTCMonth()+1)+'/'+d.getUTCDate()+'（'+w[d.getUTCDay()]+'）'};
+  var e=function(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  document.querySelectorAll('.today-full').forEach(function(el){el.hidden=+el.dataset.i!==d0%N});
+  document.getElementById('today-date').textContent=fmt(d0)+'の豆知識。明日だれかに話したくなる、お金の「へぇ〜」を毎日1本。';
+  var L=Math.floor(Date.parse('${TOPIC_LAUNCH}T00:00:00Z')/86400000), h='', o='';
+  for(var k=1;k<N;k++){var i=((d0-k)%N+N)%N, past=d0-k>=L;
+    var li='<li><a href="${SITE}/topics/'+T[i].slug+'.html"><span class="bn-d">'+(past?fmt(d0-k):'')+'</span><span class="tag">'+e(T[i].tag)+'</span><b>'+e(T[i].title)+'</b></a></li>';
+    if(past)h+=li;else o+=li;}
+  document.getElementById('backnum').innerHTML=h;
+  document.getElementById('backnum-h').hidden=!h;document.getElementById('backnum').hidden=!h;
+  document.getElementById('others').innerHTML=o;
+})();
+</script>`;
   return layout({
-    title: `明日話せるお金の豆知識【${RULES.label}】年収の壁・社会保険・節税｜${config.siteName}`,
-    description: '「103万円の壁はもう古い」「4〜6月の残業で社会保険料が決まる」など、明日だれかに話したくなるお金の豆知識。数字はすべて2026年の制度で計算。',
+    title: `今日の豆知識｜明日話せるお金の話【${RULES.label}】年収の壁・社会保険・節税｜${config.siteName}`,
+    description: '「103万円の壁はもう古い」「4〜6月の残業で社会保険料が決まる」など、明日だれかに話したくなるお金の豆知識を毎日1本。数字はすべて2026年の制度で計算。',
     path: 'topics/', body,
   });
 }
