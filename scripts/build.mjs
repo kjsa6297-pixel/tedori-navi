@@ -93,6 +93,34 @@ p{margin-bottom:10px}
 .split-legend b{display:block;font-size:16px;color:var(--text)}
 .split-legend small{font-size:11px}
 @media (max-width:420px){.split-legend{grid-template-columns:1fr 1fr}}
+/* 手取りの壁：結論ボックス */
+.verdict{background:var(--surface);border:2px solid var(--s2);border-radius:20px;padding:16px;margin:12px 0 18px}
+.verdict-h{font-size:clamp(18px,4.6vw,22px);font-weight:900;margin-bottom:10px}
+.zone-g{margin-top:10px}
+.zone-gh{font-size:13px;font-weight:700;color:var(--sub);margin-bottom:6px}
+.zone{display:grid;grid-template-columns:1fr auto;gap:0 12px;align-items:center;background:var(--alert-bg);border-radius:14px;padding:10px 14px;margin-bottom:8px;text-decoration:none;color:var(--text)}
+.zone-r{font-size:clamp(18px,4.8vw,24px);font-weight:900;line-height:1.3}
+.zone-r small{font-size:12px;margin-right:4px}
+.zone-l{font-size:clamp(17px,4.4vw,22px);font-weight:900;color:var(--alert);white-space:nowrap}
+.zone-t{grid-column:1/-1;font-size:12px;color:var(--sub)}
+.verdict-f{font-size:14px;margin:8px 0 0}
+.wcheck{display:flex;flex-direction:column;gap:2px;border-radius:14px;padding:12px 14px;font-size:14px}
+.wcheck b{font-size:17px}
+.wcheck.bad{background:var(--alert-bg)}.wcheck.bad strong{color:var(--alert)}
+.wcheck.warn{background:color-mix(in srgb,var(--s4) 16%,var(--surface))}
+.wcheck.ok{background:color-mix(in srgb,var(--s3) 14%,var(--surface))}
+.wall-sec{margin-top:18px}
+.wall-sec h3{font-size:17px;margin-bottom:4px}
+.wall-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+@media (max-width:560px){.wall-steps{grid-template-columns:1fr}}
+.wall-steps div{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;line-height:1.45}
+.wall-steps small{font-weight:800;color:var(--sub)}
+.wall-steps span{font-size:13px;color:var(--sub)}
+.wall-steps b{font-size:16px}
+.wall-steps em{font-style:normal;font-weight:900;color:var(--alert)}
+.wall-steps .bad{background:var(--alert-bg);border-color:transparent}
+.wall-steps .ok small{color:var(--s3-text)}
+.wall-loss{font-size:12px;font-weight:800;fill:var(--alert)}
 /* 次に知りたいこと：テーマ別の3パネル */
 .next{margin:22px 0 4px}
 .next-h{font-size:17px;margin:0 0 10px}
@@ -1165,35 +1193,124 @@ ${adSlot()}
 }
 
 // ─── 手取りの壁 ────────────────────────────────────────────
+// 壁の前後の手取りを折れ線で（損する区間に色を塗る）
+function wallChart(w) {
+  const span = Math.max(30000, w.recover - w.at);
+  const x0 = w.at - span * 1.5, x1 = w.recover + span * 1.2;
+  const pts = [];
+  for (let i = 0; i <= 80; i++) {
+    const inc = Math.round((x0 + (x1 - x0) * i / 80) / 1000) * 1000;
+    pts.push([inc, calcTakeHome({ income: inc, ...w.opt }).takeHome]);
+  }
+  const ys = pts.map((p) => p[1]);
+  const y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const W = 400, H = 150, T = 18, B = 26;
+  const X = (v) => ((v - x0) / (x1 - x0)) * W;
+  const Y = (v) => T + (1 - (v - y0) / (y1 - y0 || 1)) * (H - T - B);
+  return `<figure class="dg wall-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="年収${man(w.at)}万〜${man(w.recover)}万円は、手取りが壁の手前より少なくなる">
+<rect x="${X(w.at)}" y="${T - 6}" width="${X(w.recover) - X(w.at)}" height="${H - T - B + 6}" fill="var(--alert-bg)"/>
+<line x1="0" x2="${W}" y1="${Y(w.before.takeHome)}" y2="${Y(w.before.takeHome)}" stroke="var(--gross)" stroke-dasharray="4 4"/>
+<polyline points="${pts.map(([a, b]) => `${X(a).toFixed(1)},${Y(b).toFixed(1)}`).join(' ')}" fill="none" stroke="var(--s1)" stroke-width="3" stroke-linejoin="round"/>
+<text class="dg-s2" x="${X(w.at)}" y="${H - 8}" text-anchor="end">${man(w.at)}万</text>
+<text class="dg-s2" x="${X(w.recover) + 2}" y="${H - 8}">${man(w.recover)}万</text>
+<text class="wall-loss" x="${(X(w.at) + X(w.recover)) / 2}" y="${T + 4}" text-anchor="middle">損する区間</text>
+</svg><figcaption class="note">青い線＝手取り、点線＝壁の手前の手取り。年収が増えても、色の区間は点線より下（損）です。</figcaption></figure>`;
+}
+
 function kabePage() {
+  const loss = (w) => w.before.takeHome - w.after.takeHome;
+  const lossText = (w) => (loss(w) < 10000 ? `${yen(loss(w))}円` : `${man(loss(w))}万円`);
+  const zone = (w) => `<a class="zone" href="#${w.key}">
+  <span class="zone-r"><small>年収</small>${man(w.at)}万〜${man(w.recover)}万円</span>
+  <span class="zone-l">最大 −${lossText(w)}</span>
+  <span class="zone-t">${esc(w.title.replace(/（配偶者を扶養している人）/, ''))}</span>
+</a>`;
+  const all = WALLS.filter((w) => !w.opt.spouse);
+  const sp = WALLS.filter((w) => w.opt.spouse);
+  const zonesJson = JSON.stringify(WALLS.map((w) => ({ at: w.at, spouse: !!w.opt.spouse, title: w.title, key: w.key })));
   const sections = WALLS.map((w) => `
-<h2 id="${w.key}">年収約${man(w.at)}万円：${esc(w.title)}</h2>
+<section class="wall-sec" id="${w.key}">
+<h3>年収${man(w.at)}万〜${man(w.recover)}万円：${esc(w.title)}</h3>
 <p>${esc(w.why)}</p>
-<div class="wrap"><table>
-<thead><tr><th>年収</th><th>手取り（年）</th></tr></thead>
-<tbody>
-<tr><td>${yen(w.before.income)}円</td><td>${yen(w.before.takeHome)}円</td></tr>
-<tr class="hl"><td>${yen(w.after.income)}円（壁を越えた直後）</td><td>${yen(w.after.takeHome)}円（${yen(w.after.takeHome - w.before.takeHome)}円）</td></tr>
-<tr><td>${yen(w.recover)}円（手取りが元に戻る）</td><td>${yen(calcTakeHome({ income: w.recover, ...w.opt }).takeHome)}円</td></tr>
-</tbody></table></div>
-<p style="margin-top:12px">年収が約${man(w.at)}万〜${man(w.recover, 0)}万円の間は、収入が増えても手取りが壁の手前より少なくなります。昇給の時期や額を調整できる場合や、iDeCoなどで所得を下げられる場合は、この区間を意識すると損を避けられます。</p>`).join('\n');
+${wallChart(w)}
+<div class="wall-steps">
+  <div><small>壁の手前</small><span>年収 ${yen(w.before.income)}円</span><b>手取り ${yen(w.before.takeHome)}円</b></div>
+  <div class="bad"><small>越えた直後</small><span>年収 ${yen(w.after.income)}円</span><b>手取り ${yen(w.after.takeHome)}円</b><em>−${yen(loss(w))}円</em></div>
+  <div class="ok"><small>元に戻る</small><span>年収 ${yen(w.recover)}円</span><b>手取り ${yen(calcTakeHome({ income: w.recover, ...w.opt }).takeHome)}円</b></div>
+</div>
+</section>`).join('\n');
   const body = `
 <div class="crumb"><a href="${SITE}/">手取りナビ</a> › 手取りの壁</div>
-<h1>${RULES.label}の「手取りの壁」：年収が増えると手取りが減るポイント</h1>
-<p class="lead">2026年は税制改正で基礎控除が大きく変わり、年収によっては<strong>収入が増えると手取りが減る</strong>ポイントがあります。会社員（賞与なし）の場合で、壁の前後の手取りを計算しました。</p>
-<div class="callout info"><span class="ci">ℹ️</span><div>「103万円の壁」「130万円の壁」など、パート・アルバイトの扶養に関する壁はこのページの対象外です（今後追加予定）。</div></div>
-<nav class="toc" aria-label="目次"><div class="toc-h">目次</div><ol>
-${WALLS.map((w) => `<li><a href="#${w.key}">年収約${man(w.at)}万円：${esc(w.title)}</a></li>`).join('\n')}
-<li><a href="#grade">社会保険料の等級による小さな段差</a></li>
-</ol></nav>
+<h1>年収が増えると手取りが減る「壁」はいくら？【${RULES.label}】</h1>
+<section class="verdict">
+  <div class="verdict-h">結論：損するのは、この年収の区間だけ</div>
+  <div class="zone-g"><div class="zone-gh">👤 すべての会社員</div>${all.map(zone).join('')}</div>
+  <div class="zone-g"><div class="zone-gh">💍 配偶者（収入なし）を扶養している人は、さらに</div>${sp.map(zone).join('')}</div>
+  <p class="verdict-f">損は数千円〜数万円。<b>区間の上の端（元に戻る年収）まで上がれば取り戻せます。</b>昇給を断るほどではありません。</p>
+</section>
+
+<section class="sim card">
+  <h2 class="sim-h">🔎 自分は壁にかかる？</h2>
+  <div class="sim-f">
+    <label>年収（額面・賞与なし）<span class="inrow"><input id="w-i" type="number" min="100" max="3000" step="1" value="${Math.round(WALLS[0].at / 10000)}"><b>万円</b></span></label>
+    <label>配偶者（収入なし）を扶養<span class="inrow"><select id="w-s"><option value="">していない</option><option value="1">している</option></select></span></label>
+  </div>
+  <div id="w-out" aria-live="polite"></div>
+</section>
+<script type="module">
+import { calcTakeHome, yen, man } from './assets/tax.js';
+const Z = ${zonesJson};
+const $ = (id) => document.getElementById(id);
+function render() {
+  const inc = Math.round((parseFloat($('w-i').value) || 0) * 10000);
+  const spouse = !!$('w-s').value;
+  const zs = Z.filter((z) => spouse || !z.spouse);
+  const th = (i) => calcTakeHome({ income: i, spouse }).takeHome;
+  let html = '';
+  for (const z of zs) {
+    if (inc < z.at) continue;
+    const before = th(z.at - 1000);
+    if (th(inc) >= before) continue;
+    let rec = inc; while (th(rec) < before) rec += 1000;
+    html = '<div class="wcheck bad"><b>⚠️ 壁の区間に入っています</b><span>' + z.title + '</span><span>壁の手前（年収' + man(z.at - 1000) + '万円）より手取りが<strong>' + yen(before - th(inc)) + '円少ない</strong>。年収をあと<strong>' + man(rec - inc) + '万円</strong>上げると元に戻ります。</span><a href="#' + z.key + '">くわしく →</a></div>';
+    break;
+  }
+  if (!html) {
+    const next = zs.find((z) => z.at > inc && z.at - inc <= 500000);
+    html = next
+      ? '<div class="wcheck warn"><b>🟡 いまは大丈夫。でも、あと' + man(next.at - inc) + '万円で壁</b><span>' + next.title + '</span><a href="#' + next.key + '">くわしく →</a></div>'
+      : '<div class="wcheck ok"><b>✅ 壁の区間には入っていません</b><span>年収が増えれば、そのぶん手取りも増えます。</span></div>';
+  }
+  $('w-out').innerHTML = html;
+}
+document.querySelectorAll('#w-i,#w-s').forEach((el) => el.addEventListener('input', render));
+render();
+</script>
+
+${talk([
+    ['yuto', 'えっ、年収が増えて手取りが減るなんてことあるんですか？'],
+    ['sensei', `2026・2027年は、所得が一定以下の人の<b>基礎控除が上乗せ</b>されておる。年収が約${man(WALLS[0].at)}万円を超えると上乗せが急に減るから、税金が一気に増えるんじゃ。`],
+    ['yuto', 'iDeCoで所得を減らせば避けられますか？'],
+    ['sensei', 'それが<b>避けられない</b>んじゃ。壁を決めるのは「合計所得」で、iDeCoの掛金は合計所得を減らさないからの。iDeCoは税金そのものは減らすが、壁の位置は動かんぞ。'],
+    ['yuto', 'じゃあ、どうすれば？'],
+    ['sensei', '<b>越えるなら、元に戻る年収までしっかり越える</b>。少しだけ越えそうなら、残業や昇給の時期を会社と相談するのもアリじゃ。'],
+  ])}
 ${adSlot()}
+<h2>壁ごとのくわしい計算</h2>
+<p class="h2-sub">会社員・賞与なし・東京都の場合</p>
 ${sections}
 <h2 id="grade">社会保険料の等級による小さな段差</h2>
-<p>社会保険料は月給を「標準報酬月額」の等級に当てはめて決まるため、月給が等級の境目を越えると保険料が一段上がります。境目のすぐ上では、昇給額より保険料の増加が大きくなり、手取りがわずかに減ることがあります（年数千円〜3万円程度）。</p>`;
+<p>社会保険料は月給を「標準報酬月額」の等級に当てはめて決まるため、月給が等級の境目を越えると保険料が一段上がります。境目のすぐ上では、昇給額より保険料の増加が大きくなり、手取りがわずかに減ることがあります（年数千円〜3万円程度）。</p>
+<ul class="points">
+<li>23歳未満の子どもを扶養しているなど「所得金額調整控除」を受ける人は、合計所得が少し下がるため、年収850万円超の壁の位置が少し上にずれます。</li>
+</ul>
+<h2>パート・アルバイトの壁は？</h2>
+<div class="related"><a href="${SITE}/part-kabe.html">103万・106万・130万…<b>扶養内パートの年収の壁 一覧 →</b></a><a href="${SITE}/">自分の年収で<b>手取りを計算する →</b></a></div>`;
   return layout({
     title: `${RULES.label}の手取りの壁｜年収が増えると手取りが減るのはいくら？`,
-    description: `2026年の税制改正で生まれた「手取りの壁」。年収約${man(WALLS[0].at, 0)}万円で基礎控除が104万円→67万円に下がり、手取りが約${man(WALLS[0].before.takeHome - WALLS[0].after.takeHome)}万円減ります。壁の前後の手取りと、元に戻る年収を計算。`,
+    description: `2026年の税制改正で生まれた「手取りの壁」。年収${man(WALLS[0].at)}万〜${man(WALLS[0].recover)}万円は手取りが最大${man(loss(WALLS[0]))}万円減ります。損する年収の区間と、自分が当てはまるかのチェック、元に戻る年収を計算。`,
     path: 'kabe.html', body,
+    sticky: `<a class="p" href="#w-out">自分は壁にかかる？</a>`,
   });
 }
 
