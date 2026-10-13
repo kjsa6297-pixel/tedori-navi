@@ -29,7 +29,7 @@
 
 ### 3. 収益化（アクセスが出てから・3か月〜）
 - [ ] ASP（A8.net・もしも）登録 → 読者の得になる広告を選んで `affiliates` に設定
-- [ ] 月間数千PVで AdSense 申請（必要なら独自ドメイン）
+- [ ] 月間数千PVで AdSense 申請。**申請前に独自ドメインを取得**（AdSense はドメイン直下の ads.txt が必要。github.io では置けない）。候補：tedori-navi.com（Cloudflare で年10ドル前後）。切り替え時は siteUrl・static/CNAME・Search Console 再登録・GA4 ストリームURLを更新
 - [ ] 成果を共有 → ページ別の改善
 
 ## 「次に知りたいこと」の並び順の根拠
@@ -47,3 +47,4 @@
 - 2026-10-12: はてなブログへの投稿を実地で確認（初回は認証情報の前後の空白で401 → 前後の空白を取り除く処理を追加して成功）。記事：https://kou-kj.hatenablog.com/entry/2026/10/12/234106
 - 2026-10-12: Bluesky への投稿を実地で確認：https://bsky.app/profile/kj6060.bsky.social/post/3mxor5gzrmx2q 。確認モードは2026-10-26ごろまで（その後オーナーの合図で promo.auto を true に）
 - 2026-10-13: GA4 を導入（全ページに gtag、プライバシーポリシーに Google アナリティクスの記載を追加）
+- 2026-10-13: 𝕏・Bluesky の承認フローをオーナーが実際に確認。URL は当面 github.io のまま（費用ゼロ優先）。独自ドメインは AdSense 申請時に取得する方針で合意
