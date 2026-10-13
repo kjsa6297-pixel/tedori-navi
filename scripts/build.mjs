@@ -6,6 +6,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, cpSync, e
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { calcTakeHome, RULES, yen, man } from '../src/tax.js';
+import { topics } from '../src/topics.js';
 import { hero, nextItems, nextCards, lifeTiles, upBars, lineChart, familyBars, conditionBars, avgBars, saveTiles, PREFS, AVERAGES } from '../src/view.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -188,6 +189,23 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
 .seg select{font-size:14px;background:transparent;color:var(--text);border:0}
 .ad{margin:28px 0;min-height:100px}
+/* 豆知識 */
+.tag{display:inline-block;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 10px;margin-bottom:6px}
+.doya{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:16px 18px;margin:14px 0}
+.doya-k{font-size:13px;font-weight:700;color:var(--accent)}
+.doya p{font-size:19px;font-weight:800;line-height:1.6;margin:4px 0 0}
+ol.steps{padding-left:22px;display:grid;gap:8px}
+ol.steps li{padding-left:4px}
+.share-x{display:inline-block;margin-top:14px;background:var(--text);color:var(--bg);text-decoration:none;font-weight:700;font-size:14px;padding:8px 14px;border-radius:10px}
+.topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.topic-grid{grid-template-columns:1fr}}
+.topic-card{display:flex;flex-direction:column;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;text-decoration:none;color:var(--text)}
+.topic-card .tag{align-self:flex-start;margin:0}
+.topic-card b{font-size:16px;line-height:1.5}
+.topic-card small{font-size:13px}
+.today-topic{display:flex;flex-direction:column;gap:2px;margin-top:20px;background:var(--accent-soft);border-radius:16px;padding:14px 16px;text-decoration:none;color:var(--text)}
+.tt-k{font-size:13px;font-weight:700;color:var(--accent)}
+.today-topic b{font-size:17px}
 ul.points{list-style:none;display:grid;gap:8px;margin:8px 0}
 ul.points li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px}
 .toc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin:14px 0}
@@ -243,7 +261,7 @@ ${head}
 <body>
 <header class="top"><div>
 <a class="logo" href="${SITE}/">💴 手取り<b>ナビ</b></a>
-<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">早見表</a><a href="${SITE}/hikaku.html">2社比較</a><a href="${SITE}/kabe.html">手取りの壁</a></nav>
+<nav><a href="${SITE}/">計算する</a><a href="${SITE}/nenshu/">早見表</a><a href="${SITE}/hikaku.html">2社比較</a><a href="${SITE}/topics/">豆知識</a></nav>
 </div></header>
 <main>
 ${body}
@@ -475,10 +493,12 @@ function indexPage() {
   </div>
 </form>
 <div id="out" aria-live="polite"></div>
+${todayTopicCard()}
 ${adSlot()}
 <div class="related" style="margin-top:24px">
 <a href="${SITE}/hikaku.html">転職・内定で迷ったら<b>2社の手取りを比べる →</b></a>
 <a href="${SITE}/kabe.html">2026年の手取りの壁<b>損する年収は？ →</b></a>
+<a href="${SITE}/topics/">明日話せるお金の豆知識<b>${TOPICS.length}本 →</b></a>
 </div>
 <h2>よく見られている年収</h2>
 <p class="h2-sub">年収ごとの詳しい解説ページ</p>
@@ -602,6 +622,69 @@ render();
     description: '転職・内定で迷ったときに、2社の月給・ボーナス・勤務地から手取りの差を計算する無料ツール。額面の差のうち、実際に手元に残る差がひと目でわかります。',
     path: 'hikaku.html', body,
   });
+}
+
+// ─── 明日話せるお金の豆知識 ────────────────────────────────
+const TOPICS = topics();
+
+function topicPage(t, i) {
+  const prev = TOPICS[(i - 1 + TOPICS.length) % TOPICS.length];
+  const next = TOPICS[(i + 1) % TOPICS.length];
+  const shareText = encodeURIComponent(`${t.doya}\n${t.title}`);
+  const shareUrl = encodeURIComponent(`${SITE}/topics/${t.slug}.html`);
+  const body = `
+<div class="crumb"><a href="${SITE}/">手取りナビ</a> › <a href="${SITE}/topics/">明日話せるお金の豆知識</a> › ${esc(t.tag)}</div>
+<span class="tag">${esc(t.tag)}</span>
+<h1>${esc(t.title)}</h1>
+<div class="doya"><div class="doya-k">💬 明日、こう話せます</div><p>「${esc(t.doya)}」</p></div>
+<h2>くわしく</h2>
+<ol class="steps">${t.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ol>
+<div class="related" style="margin-top:20px"><a href="${SITE}${t.link[0]}">${esc(t.link[1])}<b>計算ツールで確かめる →</b></a></div>
+<p class="note">出典：${t.src[1] ? `<a href="${esc(t.src[1])}" rel="noopener">${esc(t.src[0])}</a>` : esc(t.src[0])}／${RULES.label}の制度で計算（最終確認 ${RULES.updated}）</p>
+<a class="share-x" href="https://x.com/intent/post?text=${shareText}&url=${shareUrl}" target="_blank" rel="noopener">𝕏 でシェア</a>
+<h2>ほかの豆知識</h2>
+<div class="related">
+<a href="${SITE}/topics/${prev.slug}.html">← ${esc(prev.title)}</a>
+<a href="${SITE}/topics/${next.slug}.html">${esc(next.title)} →</a>
+</div>
+<p style="margin-top:14px"><a href="${SITE}/topics/">豆知識の一覧へ</a></p>`;
+  return layout({
+    title: `${t.title}｜明日話せるお金の豆知識`,
+    description: `${t.doya} ${t.points[0]}`.slice(0, 160),
+    path: `topics/${t.slug}.html`, body,
+    sticky: `<a class="p" href="${SITE}${t.link[0]}">${esc(t.link[1])}</a>`,
+  });
+}
+
+function topicsIndex() {
+  const body = `
+<div class="crumb"><a href="${SITE}/">手取りナビ</a> › 明日話せるお金の豆知識</div>
+<h1>明日話せるお金の豆知識</h1>
+<p class="lead">職場や家族とのちょっとした会話で使える、お金の「へぇ〜」を集めました。数字はすべて${RULES.label}の制度で計算しています。</p>
+<div class="topic-grid">
+${TOPICS.map((t) => `<a class="topic-card" href="${SITE}/topics/${t.slug}.html"><span class="tag">${esc(t.tag)}</span><b>${esc(t.title)}</b><small>${esc(t.doya)}</small></a>`).join('\n')}
+</div>`;
+  return layout({
+    title: `明日話せるお金の豆知識【${RULES.label}】年収の壁・社会保険・節税｜${config.siteName}`,
+    description: '「103万円の壁はもう古い」「4〜6月の残業で社会保険料が決まる」など、明日だれかに話したくなるお金の豆知識。数字はすべて2026年の制度で計算。',
+    path: 'topics/', body,
+  });
+}
+
+// トップに出す「今日の豆知識」（ブラウザで日付から選ぶ）
+function todayTopicCard() {
+  const list = TOPICS.map(({ slug, tag, title, doya }) => ({ slug, tag, title, doya }));
+  return `
+<div id="today-topic"></div>
+<script>
+(function(){
+  var T=${JSON.stringify(list)};
+  var d=new Date(Date.now()+9*3600*1000).toISOString().slice(0,10);
+  var t=T[Math.floor(Date.parse(d+'T00:00:00Z')/86400000)%T.length];
+  var e=function(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  document.getElementById('today-topic').innerHTML='<a class="today-topic" href="${SITE}/topics/'+t.slug+'.html" data-next="topic"><span class="tt-k">💡 今日の豆知識</span><b>'+e(t.title)+'</b><small>'+e(t.doya)+'</small></a>';
+})();
+</script>`;
 }
 
 // ─── 年収別一覧（早見表） ──────────────────────────────────
@@ -740,10 +823,12 @@ write('kabe.html', kabePage());
 write('about.html', aboutPage());
 write('hikaku.html', hikakuPage());
 write('operator.html', operatorPage());
+write('topics/index.html', topicsIndex());
+TOPICS.forEach((t, i) => write(`topics/${t.slug}.html`, topicPage(t, i)));
 write('privacy.html', privacyPage());
 write('404.html', layout({ title: 'ページが見つかりません', description: '', path: '404.html', body: `<h1>ページが見つかりません</h1><p><a href="${SITE}/">手取り計算ツールへ戻る</a></p>` }));
 
-const urls = ['', 'nenshu/', 'hikaku.html', 'kabe.html', 'about.html', 'operator.html', ...pageIncomes.map((n) => `nenshu/${n}.html`)];
+const urls = ['', 'nenshu/', 'hikaku.html', 'kabe.html', 'topics/', ...TOPICS.map((t) => `topics/${t.slug}.html`), 'about.html', 'operator.html', ...pageIncomes.map((n) => `nenshu/${n}.html`)];
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((u) => `  <url><loc>${SITE}/${u}</loc><lastmod>${RULES.updated}</lastmod></url>`).join('\n')}

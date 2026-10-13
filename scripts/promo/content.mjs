@@ -5,6 +5,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { calcTakeHome, deductionValue, PREF_HEALTH, RULES, yen, man } from '../../src/tax.js';
 import { AVERAGES } from '../../src/view.js';
+import { topics } from '../../src/topics.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const config = JSON.parse(readFileSync(join(ROOT, 'site.config.json'), 'utf8'));
@@ -89,8 +90,20 @@ const X_TEMPLATES = [
   },
 ];
 
+// 1日おきに「明日話せるお金の豆知識」
+function topicPost(i) {
+  const list = topics();
+  const t = list[i % list.length];
+  return `💡明日話せるお金の話\n\n${t.doya}\n\n${t.title}👇\n${SITE}/topics/${t.slug}.html\n#お金の豆知識 #${t.tag.replace(/\s/g, '')}`;
+}
+
 export function xPost(date) {
-  const d = dayIndex(date);
+  const day = dayIndex(date);
+  if (day % 2) {
+    const text = topicPost(Math.floor(day / 2));
+    return { kind: 'x', title: text.split('\n')[2] || text.split('\n')[0], body: text };
+  }
+  const d = Math.floor(day / 2);
   const text = X_TEMPLATES[d % X_TEMPLATES.length](Math.floor(d / X_TEMPLATES.length));
   return { kind: 'x', title: text.split('\n')[0], body: text };
 }
