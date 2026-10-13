@@ -146,8 +146,8 @@ export function calcTakeHome({ income, bonus = 0, pref = '東京都', over40 = f
   const taxableIT = floor1000(totalIncome - social - basicDeductionIT(totalIncome) - spIT - 380000 * dependents);
   const itax = incomeTax(taxableIT);
 
-  // 住民税（令和8年度の給与所得控除: 最低保障65万円）
-  const totalIncomeRT = employmentIncome(income, 650000, 1900000);
+  // 住民税（2026年の所得にかかる令和9年度分。給与所得控除の最低保障は所得税と同じ74万円）
+  const totalIncomeRT = employmentIncome(income, 740000, 2200000);
   const taxableRT = floor1000(totalIncomeRT - social - basicDeductionRT(totalIncomeRT) - spRT - 330000 * dependents);
   const family = (spouse ? 1 : 0) + dependents;
   const noIncomeLevy = family ? totalIncomeRT <= 350000 * (family + 1) + 420000 : totalIncomeRT <= 450000;

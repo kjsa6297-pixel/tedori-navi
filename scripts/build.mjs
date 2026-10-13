@@ -7,6 +7,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { calcTakeHome, RULES, yen, man } from '../src/tax.js';
 import { topics } from '../src/topics.js';
+import { PART_WALLS, WALL_TYPES, IMPACT_LABEL } from '../src/walls.js';
 import { hero, nextItems, nextCards, lifeTiles, upBars, lineChart, familyBars, conditionBars, avgBars, saveTiles, PREFS, AVERAGES } from '../src/view.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -189,6 +190,39 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
 .seg select{font-size:14px;background:transparent;color:var(--text);border:0}
 .ad{margin:28px 0;min-height:100px}
+/* 扶養内パートの壁 */
+.wall-hero label.big{font-weight:700;font-size:14px;color:var(--sub)}
+.wall-hero input[type=number]{width:100%;font-size:28px;font-weight:800;padding:8px 12px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text)}
+.wall-hero input[type=number]:focus{outline:none;border-color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--sub);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:middle}
+.tabs{margin:18px 0 0}
+.wall-hero .ksum{margin:10px 0 6px;font-size:15px;line-height:1.6}
+.ksum-main{font-size:18px}
+.ksum b{font-size:1.15em}
+.warn-line{color:var(--alert);font-weight:700;margin-top:4px}
+.wl{width:100%;height:auto;display:block;margin-top:6px}
+.wl-axis{stroke:var(--line);stroke-width:8;stroke-linecap:round}
+.wl-me{fill:var(--accent);opacity:.35}
+.wl-t{fill:var(--muted);font-size:11px}
+.wl-v{fill:var(--text);font-size:11px;font-weight:700}
+.wall{position:relative;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:14px;padding:14px 16px;margin:10px 0}
+.wall.big{box-shadow:0 0 0 2px var(--c) inset}
+.wall-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wall-amt{font-size:28px;font-weight:900;line-height:1}
+.wall-amt small{font-size:14px;margin-left:2px}
+.wall-amt-s{font-size:20px}
+.wall-chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;border:1.5px solid var(--c);color:var(--text)}
+.chip.who{border-color:var(--line);color:var(--sub);font-weight:400}
+.wall h3{font-size:17px;margin:8px 0 2px}
+.wall p{margin:4px 0;font-size:15px}
+.impact b{font-weight:800}
+.impact.i3 b{color:var(--alert)}
+.impact.i0 b{color:var(--accent)}
+.passed{display:none;margin-left:auto;font-size:12px;font-weight:700;color:var(--accent)}
+.wall.is-passed .passed{display:inline}
+.wall.is-passed{opacity:.75}
 /* 豆知識 */
 .tag{display:inline-block;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 10px;margin-bottom:6px}
 .doya{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:16px 18px;margin:14px 0}
@@ -499,6 +533,7 @@ ${adSlot()}
 <a href="${SITE}/hikaku.html">転職・内定で迷ったら<b>2社の手取りを比べる →</b></a>
 <a href="${SITE}/kabe.html">2026年の手取りの壁<b>損する年収は？ →</b></a>
 <a href="${SITE}/topics/">明日話せるお金の豆知識<b>${TOPICS.length}本 →</b></a>
+<a href="${SITE}/part-kabe.html">扶養内パートの年収の壁<b>2026年版の一覧 →</b></a>
 </div>
 <h2>よく見られている年収</h2>
 <p class="h2-sub">年収ごとの詳しい解説ページ</p>
@@ -687,6 +722,109 @@ function todayTopicCard() {
 </script>`;
 }
 
+// ─── 扶養内パートの年収の壁 一覧 ───────────────────────────
+function wallLine(walls) {
+  const W = 400, L = 14, R = 14, min = 100, max = 215;
+  const x = (v) => L + ((v - min) / (max - min)) * (W - L - R);
+  const ticks = [100, 130, 160, 190, 210];
+  const pts = walls.filter((w) => w.at);
+  return `
+<svg class="wl" viewBox="0 0 ${W} 92" role="img" aria-label="年収の壁の位置">
+  <line class="wl-axis" x1="${L}" x2="${W - R}" y1="56" y2="56"/>
+  ${ticks.map((t) => `<text class="wl-t" x="${x(t)}" y="84" text-anchor="middle">${t}万</text>`).join('')}
+  <rect class="wl-me" x="${L}" y="52" width="0" height="8" rx="4"/>
+  ${pts.map((w, i) => `<g><line x1="${x(w.at)}" x2="${x(w.at)}" y1="${i % 2 ? 30 : 18}" y2="64" stroke="${WALL_TYPES[w.type].color}" stroke-width="2"/><circle cx="${x(w.at)}" cy="56" r="6" fill="${WALL_TYPES[w.type].color}" stroke="var(--surface)" stroke-width="2"/><text class="wl-v" x="${x(w.at)}" y="${i % 2 ? 26 : 14}" text-anchor="middle">${w.at}</text></g>`).join('')}
+</svg>`;
+}
+
+function wallCards(key, walls) {
+  return walls.map((w, i) => `
+<article class="wall${w.impact === 3 ? ' big' : ''}" data-at="${w.at ?? ''}" style="--c:${WALL_TYPES[w.type].color}">
+  <div class="wall-h">
+    <div class="wall-amt">${w.at ? `${w.at}<small>万円</small>` : `<span class="wall-amt-s">${esc(w.label)}</span>`}</div>
+    <div class="wall-chips"><span class="chip" style="--c:${WALL_TYPES[w.type].color}">${WALL_TYPES[w.type].label}</span><span class="chip who">影響する人：${esc(w.who)}</span></div>
+    <span class="passed">✓ 越えている</span>
+  </div>
+  <h3>${esc(w.title)}</h3>
+  <p class="impact i${w.impact}">手取りへの影響：<b>${IMPACT_LABEL[w.impact]}</b></p>
+  <p>${esc(w.what)}</p>
+  <p class="note">${esc(w.note)}　出典：<a href="${esc(w.src[1])}" rel="noopener">${esc(w.src[0])}</a></p>
+</article>`).join('');
+}
+
+function partKabePage() {
+  const tabs = Object.entries(PART_WALLS);
+  const body = `
+<div class="crumb"><a href="${SITE}/">手取りナビ</a> › 扶養内パートの年収の壁</div>
+<h1>扶養内パートの「年収の壁」一覧【2026年版】</h1>
+<p class="lead">103万円・106万円・130万円……。2026年は税制改正と社会保険の見直しで、壁の金額が大きく変わりました。<strong>本当に気をつけるべき壁</strong>と、<strong>実は気にしなくていい壁</strong>を1ページで整理します。</p>
+
+<div class="callout"><span class="ci">💡</span><div><b>結論：本当に手取りが減る大きな壁は「社会保険」の2つだけ。</b><br>「週20時間（勤務先の社会保険）」と「130万円（学生は150万円）」です。税金の壁は、超えた分にだけかかるので手取りが逆転しません。</div></div>
+
+<div class="seg tabs" role="tablist">
+${tabs.map(([k, v], i) => `<label><input type="radio" name="who" value="${k}"${i ? '' : ' checked'}>${esc(v.label)}</label>`).join('')}
+</div>
+
+<section class="hero wall-hero">
+  <label class="big" for="kv">あなたの年収（見込み・交通費込み）</label>
+  <div class="inrow"><input id="kv" type="number" inputmode="numeric" min="50" max="300" step="1" value="125"><span>万円</span></div>
+  <input id="ks" type="range" min="90" max="220" step="1" value="125" aria-label="年収スライダー">
+  <div id="ksum" class="ksum"></div>
+  ${tabs.map(([k, v], i) => `<div class="wl-wrap" data-who="${k}"${i ? ' hidden' : ''}>${wallLine(v.walls)}</div>`).join('')}
+  <div class="legend">${Object.values(WALL_TYPES).map((t) => `<span><i style="background:${t.color}"></i>${t.label}</span>`).join('')}</div>
+</section>
+
+${tabs.map(([k, v], i) => `<div class="walls" data-who="${k}"${i ? ' hidden' : ''}>
+<h2>${esc(v.label)}の壁（年収の低い順）</h2>
+${wallCards(k, v.walls)}
+</div>`).join('')}
+
+<h2>よくある誤解</h2>
+<ul class="points">
+<li><b>「103万円の壁」はもうありません。</b>2026年は、本人に所得税がかかるのは年収178万円を超えてから。配偶者・親の控除も136万円まで満額です。</li>
+<li><b>「106万円の壁」は2026年10月になくなりました。</b>代わりに「週20時間以上」働くかどうかで、勤務先の社会保険に入るかが決まります（従業員51人以上の会社）。</li>
+<li><b>「136万円」は壁ではありません。</b>控除の名前が変わるだけで、配偶者・親の控除額は変わりません。</li>
+</ul>
+
+<div class="callout info"><span class="ci">📌</span><div>金額は「給与収入だけ」の場合の目安です。配偶者の年収、勤務先の規模、自治体、加入している健康保険組合によって変わることがあります。迷ったら勤務先や健康保険組合に確認してください。</div></div>
+
+<div class="related" style="margin-top:20px">
+<a href="${SITE}/kabe.html">会社員の「手取りの壁」<b>年収666万円など →</b></a>
+<a href="${SITE}/topics/">明日話せるお金の豆知識<b>一覧へ →</b></a>
+</div>
+
+<script>
+(function(){
+  var $=function(s){return document.querySelector(s)};
+  var D=${JSON.stringify(Object.fromEntries(tabs.map(([k, v]) => [k, v.walls.filter((w) => w.at).map((w) => ({ at: w.at, title: w.title, impact: w.impact }))])))};
+  var x=function(v){return 14+((Math.min(215,Math.max(100,v))-100)/115)*372};
+  function who(){return document.querySelector('[name=who]:checked').value}
+  function render(){
+    var w=who(), n=Math.max(0,parseFloat($('#kv').value)||0);
+    $('#ks').value=Math.min(220,Math.max(90,n));
+    document.querySelectorAll('[data-who]').forEach(function(el){el.hidden=el.dataset.who!==w});
+    document.querySelectorAll('.walls[data-who="'+w+'"] .wall').forEach(function(el){var a=parseFloat(el.dataset.at);el.classList.toggle('is-passed',a&&n>a)});
+    var me=document.querySelector('.wl-wrap[data-who="'+w+'"] .wl-me'); if(me) me.setAttribute('width',Math.max(0,x(n)-14));
+    var list=D[w], passed=list.filter(function(o){return n>o.at}), next=list.find(function(o){return n<=o.at});
+    var big=passed.filter(function(o){return o.impact===3});
+    $('#ksum').innerHTML='<div class="ksum-main">越えている壁：<b>'+passed.length+'</b> / '+list.length+'</div>'+
+      (next?'<div>次の壁まで あと <b>'+(Math.round((next.at-n)*10)/10)+'万円</b>（'+next.at+'万円：'+next.title+'）</div>':'<div>すべての壁を越えています</div>')+
+      (big.length?'<div class="warn-line">⚠️ 手取りが大きく減る壁（'+big.map(function(o){return o.at+'万円'}).join('・')+'）を越えています</div>':'');
+  }
+  $('#ks').addEventListener('input',function(){$('#kv').value=$('#ks').value;render()});
+  $('#kv').addEventListener('input',render);
+  document.querySelectorAll('[name=who]').forEach(function(r){r.addEventListener('change',render)});
+  render();
+})();
+</script>`;
+  return layout({
+    title: `扶養内パートの年収の壁 一覧【2026年】103万・106万・130万・136万・178万はどう変わった？｜${config.siteName}`,
+    description: '2026年の扶養内パートの年収の壁を一覧で整理。住民税119万円、社会保険の週20時間・130万円、配偶者控除136万円・169万円、所得税178万円。学生（19〜22歳）の150万円の壁も。本当に気をつけるべき壁がひと目でわかります。',
+    path: 'part-kabe.html', body,
+    sticky: `<a class="p" href="#kv">自分の年収で確かめる</a>`,
+  });
+}
+
 // ─── 年収別一覧（早見表） ──────────────────────────────────
 function nenshuIndex() {
   const rows = pageIncomes.map((n) => {
@@ -753,7 +891,7 @@ function aboutPage() {
 <li>給与収入のみ。年収別ページは賞与（ボーナス）なし・東京都の場合。計算ツールでは賞与（年2回・同額で支給）と都道府県を指定できます。月給 =（年収 − 賞与）÷ 12 として標準報酬月額を決め、賞与には標準賞与額の上限（健康保険は年度573万円、厚生年金は1回150万円）を適用しています。</li>
 <li>健康保険は協会けんぽ（令和8年度の都道府県別料率。東京都は${pct(RULES.healthRate, 2)}%）、介護保険${pct(RULES.kaigoRate, 2)}%（40〜64歳）、子ども・子育て支援金${pct(RULES.kodomoRate, 2)}%、厚生年金${pct(RULES.pensionRate, 1)}%（いずれも本人負担はその半分）、雇用保険${pct(RULES.koyouRate, 1)}%（一般の事業）。</li>
 <li>所得税は令和8年分（基礎控除の特例加算、給与所得控除の最低保障74万円を含む）。復興特別所得税2.1%を含みます。</li>
-<li>住民税は同じ所得に対する年額（実際は翌年6月から納付）。税率10%、均等割5,000円（森林環境税含む）、給与所得控除は令和8年度の住民税の計算方法（最低保障65万円）を使っています。</li>
+<li>住民税は同じ所得に対する年額（実際は翌年6月から納付）。税率10%、均等割5,000円（森林環境税含む）、2026年の所得にかかる令和9年度分として、給与所得控除の最低保障は74万円で計算しています。</li>
 <li>配偶者控除は配偶者の収入がない場合、扶養控除は16歳以上の一般の扶養親族として計算しています。生命保険料控除などその他の控除は含みません。</li>
 <li>ふるさと納税の上限は「住民税所得割額 × 20% ÷（90% − 所得税率 × 1.021）+ 2,000円」の目安です。</li>
 </ul>
@@ -823,12 +961,13 @@ write('kabe.html', kabePage());
 write('about.html', aboutPage());
 write('hikaku.html', hikakuPage());
 write('operator.html', operatorPage());
+write('part-kabe.html', partKabePage());
 write('topics/index.html', topicsIndex());
 TOPICS.forEach((t, i) => write(`topics/${t.slug}.html`, topicPage(t, i)));
 write('privacy.html', privacyPage());
 write('404.html', layout({ title: 'ページが見つかりません', description: '', path: '404.html', body: `<h1>ページが見つかりません</h1><p><a href="${SITE}/">手取り計算ツールへ戻る</a></p>` }));
 
-const urls = ['', 'nenshu/', 'hikaku.html', 'kabe.html', 'topics/', ...TOPICS.map((t) => `topics/${t.slug}.html`), 'about.html', 'operator.html', ...pageIncomes.map((n) => `nenshu/${n}.html`)];
+const urls = ['', 'nenshu/', 'hikaku.html', 'kabe.html', 'part-kabe.html', 'topics/', ...TOPICS.map((t) => `topics/${t.slug}.html`), 'about.html', 'operator.html', ...pageIncomes.map((n) => `nenshu/${n}.html`)];
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((u) => `  <url><loc>${SITE}/${u}</loc><lastmod>${RULES.updated}</lastmod></url>`).join('\n')}

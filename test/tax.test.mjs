@@ -99,3 +99,11 @@ test('都道府県別の健康保険料率（大阪府 10.13%）', () => {
   assert.equal(r.health, 21238 * 12);
   assert.equal(Object.keys(PREF_HEALTH).length, 47);
 });
+
+test('住民税：給与収入119万円以下は所得割がかからない（令和9年度・単身・最低保障74万円）', () => {
+  // 119万 - 74万 = 45万 → 非課税限度額（45万円）以下
+  const a = calcTakeHome({ income: 1190000 });
+  const b = calcTakeHome({ income: 1200000 });
+  assert.equal(a.residentTax, 0);
+  assert.ok(b.residentTax > 0);
+});
