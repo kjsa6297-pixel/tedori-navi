@@ -13,7 +13,7 @@
 - [ ] 大手計算サイトと結果を突き合わせ（オーナー）
 - [x] Google Search Console 所有権確認（HTMLファイル `static/google877b994e362b25c4.html`。**削除しないこと**）
 - [ ] sitemap.xml を Search Console から送信（オーナー）
-- [ ] GA4 を作成し、測定ID を `site.config.json` の `gaMeasurementId` に設定（オーナー → Claude）
+- [x] GA4 を作成し、測定ID（G-CXW4RBT75B）を設定。カードのクリックは `next_click` イベント
 
 ### 2. 中身を増やす（1〜3か月）
 - [x] 宣伝の自動化（𝕏・はてなブログ、note は貼り付け用の下書き）を実装。最初の2週間は Issue で確認（docs/PROMO.md）
@@ -46,3 +46,4 @@
 - 2026-10-12: Bluesky への自動投稿を追加（AT Protocol、リンク・タグの facet とリンクカード）。facet の位置は1年分テスト済み。実際の投稿は認証情報の登録待ち
 - 2026-10-12: はてなブログへの投稿を実地で確認（初回は認証情報の前後の空白で401 → 前後の空白を取り除く処理を追加して成功）。記事：https://kou-kj.hatenablog.com/entry/2026/10/12/234106
 - 2026-10-12: Bluesky への投稿を実地で確認：https://bsky.app/profile/kj6060.bsky.social/post/3mxor5gzrmx2q 。確認モードは2026-10-26ごろまで（その後オーナーの合図で promo.auto を true に）
+- 2026-10-13: GA4 を導入（全ページに gtag、プライバシーポリシーに Google アナリティクスの記載を追加）

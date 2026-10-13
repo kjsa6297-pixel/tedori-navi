@@ -719,7 +719,7 @@ function privacyPage() {
 <h2>広告について</h2>
 <p>当サイトでは、第三者配信の広告サービス（Google アドセンス等）やアフィリエイトプログラムを利用する場合があります。広告配信事業者は、ユーザーの興味に応じた広告を表示するために Cookie を使用することがあります。Cookie を無効にする方法や Google アドセンスに関する詳細は、<a href="https://policies.google.com/technologies/ads?hl=ja" rel="noopener">Google の広告に関するポリシー</a>をご覧ください。</p>
 <h2>アクセス解析について</h2>
-<p>サイト改善のため、アクセス解析ツールを利用する場合があります。データは匿名で収集され、個人を特定するものではありません。</p>
+<p>サイト改善のため、Google が提供するアクセス解析ツール「Google アナリティクス」を利用しています。Google アナリティクスは Cookie を使用して、どのページが見られたか・どのボタンが押されたかなどのデータを匿名で収集します。個人を特定する情報は含まれません。計算ツールに入力した年収などの数値は送信していません。詳しくは<a href="https://marketingplatform.google.com/about/analytics/terms/jp/" rel="noopener">Google アナリティクス利用規約</a>と<a href="https://policies.google.com/privacy?hl=ja" rel="noopener">Google のプライバシーポリシー</a>をご覧ください。</p>
 <h2>免責事項</h2>
 <p>当サイトの計算結果は概算であり、正確性を保証するものではありません。当サイトの情報を利用したことによる損害について、一切の責任を負いかねます。</p>`;
   return layout({ title: `プライバシーポリシー｜${config.siteName}`, description: '手取りナビのプライバシーポリシーと免責事項。', path: 'privacy.html', body });
