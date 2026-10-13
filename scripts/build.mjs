@@ -49,11 +49,11 @@ const cta = (key) => {
 const CSS = `
 :root{color-scheme:light;--bg:#f4f5f7;--surface:#fff;--text:#14171c;--sub:#555b66;--muted:#7d838e;--line:#e2e5ea;--grid:#eceef1;
 --accent:#1f63b8;--accent-soft:#e8f0fb;--alert:#9a3d00;--alert-bg:#fff1e6;
---s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--gross:#9aa0a8;--gap:rgba(235,104,52,.12)}
+--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s3-text:#0f7a54;--s4-text:#8a5a00;--gross:#9aa0a8;--gap:rgba(235,104,52,.12)}
 @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;--bg:#111317;--surface:#1a1d22;--text:#eceef1;--sub:#b3b9c3;--muted:#8a919c;--line:#2b3038;--grid:#23272e;
---accent:#6aa6ef;--accent-soft:#17263a;--alert:#ffb27a;--alert-bg:#33200f;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--gross:#6b717a;--gap:rgba(217,89,38,.16)}}
+--accent:#6aa6ef;--accent-soft:#17263a;--alert:#ffb27a;--alert-bg:#33200f;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s3-text:#4fd6a3;--s4-text:#ffc552;--gross:#6b717a;--gap:rgba(217,89,38,.16)}}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#111317;--surface:#1a1d22;--text:#eceef1;--sub:#b3b9c3;--muted:#8a919c;--line:#2b3038;--grid:#23272e;
---accent:#6aa6ef;--accent-soft:#17263a;--alert:#ffb27a;--alert-bg:#33200f;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--gross:#6b717a;--gap:rgba(217,89,38,.16)}
+--accent:#6aa6ef;--accent-soft:#17263a;--alert:#ffb27a;--alert-bg:#33200f;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s3-text:#4fd6a3;--s4-text:#ffc552;--gross:#6b717a;--gap:rgba(217,89,38,.16)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;line-height:1.7;font-size:16px;font-variant-numeric:tabular-nums}
 a{color:var(--accent)}
@@ -93,18 +93,27 @@ p{margin-bottom:10px}
 .split-legend b{display:block;font-size:16px;color:var(--text)}
 .split-legend small{font-size:11px}
 @media (max-width:420px){.split-legend{grid-template-columns:1fr 1fr}}
-/* 次に知りたいこと */
-.next{margin:20px 0 4px}
-.next-h{font-size:15px;margin:0 0 10px;color:var(--sub)}
-.next-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-@media (max-width:560px){.next-grid{grid-template-columns:1fr 1fr}}
-.next-card{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;text-decoration:none;color:var(--text);transition:border-color .15s,transform .15s}
-.next-card:hover{border-color:var(--accent);transform:translateY(-1px)}
-.next-card .ni{font-size:22px;line-height:1}
-.next-card .nq{font-size:13px;color:var(--sub);margin-top:4px}
-.next-card .na{font-size:17px;font-weight:800;color:var(--accent)}
-.next-card.alert{background:var(--alert-bg);border-color:transparent}
-.next-card.alert .na{color:var(--alert)}
+/* 次に知りたいこと：テーマ別の3パネル */
+.next{margin:22px 0 4px}
+.next-h{font-size:17px;margin:0 0 10px}
+.next-groups{display:grid;gap:12px}
+.ng-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));column-gap:14px}
+.ng{--c:var(--s1);--ct:var(--accent);background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--c);border-radius:16px;padding:12px 12px 6px}
+.ng-grow{--c:var(--s3);--ct:var(--s3-text)}
+.ng-save{--c:var(--s4);--ct:var(--s4-text)}
+.ng-h{display:flex;align-items:center;gap:8px;font-size:15px;margin:0 0 6px;color:var(--text)}
+.ng-h span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--c);color:#fff;font-size:13px;font-weight:900}
+.nrow{display:flex;align-items:center;gap:10px;padding:10px 4px;border-top:1px dashed var(--line);text-decoration:none;color:var(--text)}
+.nrow:first-child{border-top:0}
+@media (min-width:600px){.nrow{border-top:0}}
+.nrow:hover .na{text-decoration:underline}
+.nrow .ni{font-size:24px;line-height:1;flex:0 0 30px;text-align:center}
+.nrow .nt{flex:1;display:flex;flex-direction:column;line-height:1.35;min-width:0}
+.nrow .nq{font-size:13px;color:var(--sub)}
+.nrow .na{font-size:18px;font-weight:900;color:var(--ct)}
+.ng-go{font-size:24px;color:var(--c);font-weight:700}
+.nrow.alert{background:var(--alert-bg);border-radius:10px;border-top:0;margin:2px 0}
+.nrow.alert .na{color:var(--alert)}
 /* 年収アップ */
 .upbars{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
 .up-row{display:grid;grid-template-columns:92px 1fr 92px;align-items:center;gap:10px;padding:7px 0}

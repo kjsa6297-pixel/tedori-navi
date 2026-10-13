@@ -51,23 +51,33 @@ export function nextItems(n, r, opt = {}) {
   const rentLo = r.takeHomeMonthly * 0.25;
   const rentHi = r.takeHomeMonthly * 0.3;
   const ideco = idecoSaving(r, 240000);
+  const avgDiff = n - AVERAGES.rows[0][1];
   return {
-    rent: { icon: '🏠', q: '家賃はいくらまで？', a: `月${man(rentLo, 0)}〜${man(rentHi, 0)}万円`, href: '#life' },
-    up: { icon: '📈', q: '年収+50万円なら？', a: `手取り+${man(up50.takeHome - r.takeHome)}万円`, href: '#up' },
-    family: { icon: '👪', q: '結婚・扶養で変わる？', a: opt.spouse ? '条件別に比較' : `手取り+${man(married.takeHome - r.takeHome)}万円`, href: '#family' },
-    furusato: { icon: '🎁', q: 'ふるさと納税はいくらまで？', a: r.furusato ? `約${man(r.furusato)}万円` : '対象外', href: '#save' },
-    ideco: { icon: '🐷', q: 'iDeCoでいくら節税？', a: `年${man(ideco)}万円`, href: '#save' },
-    avg: { icon: '📊', q: '平均年収と比べると？', a: `${n >= AVERAGES.rows[0][1] ? '+' : '−'}${Math.abs(n - AVERAGES.rows[0][1]).toLocaleString('ja-JP')}万円`, href: '#avg' },
+    rent: { g: 'now', icon: '🏠', q: '家賃はいくらまで？', a: `月${man(rentLo, 0)}〜${man(rentHi, 0)}万円`, href: '#life' },
+    avg: { g: 'now', icon: '📊', q: '平均年収と比べると？', a: avgDiff === 0 ? 'ちょうど平均' : `平均より${Math.abs(avgDiff).toLocaleString('ja-JP')}万円${avgDiff > 0 ? '高い' : '低い'}`, href: '#avg' },
+    up: { g: 'grow', icon: '📈', q: '年収が50万円上がると？', a: `手取り+${man(up50.takeHome - r.takeHome)}万円`, href: '#up' },
+    family: { g: 'grow', icon: '👪', q: '結婚・扶養で変わる？', a: opt.spouse ? '条件別に比較' : `手取り+${man(married.takeHome - r.takeHome)}万円`, href: '#family' },
+    furusato: { g: 'save', icon: '🎁', q: 'ふるさと納税はいくらまで？', a: r.furusato ? `約${man(r.furusato)}万円まで` : '対象外', href: '#save' },
+    ideco: { g: 'save', icon: '🐷', q: 'iDeCo（月2万円）で節税すると？', a: ideco > 0 ? `税金が年${man(ideco)}万円減る` : '節税効果なし', href: '#save' },
   };
 }
 
+// 「次に知りたいこと」は読者の流れ（知る→増やす→減らす）でテーマごとにまとめる。テーマ内の並びは nextOrder
+const NEXT_GROUPS = [
+  { g: 'now', n: 1, t: 'いまの手取りで暮らすと' },
+  { g: 'grow', n: 2, t: '手取りを増やすには' },
+  { g: 'save', n: 3, t: '税金を減らすには' },
+];
 export function nextCards(items, order, extra = []) {
-  const list = [...extra, ...order.filter((k) => items[k]).map((k) => ({ key: k, ...items[k] }))];
+  const keys = [...order.filter((k) => items[k]), ...Object.keys(items).filter((k) => !order.includes(k))];
+  const list = [...extra.map((e) => ({ g: 'grow', ...e })), ...keys.map((k) => ({ key: k, ...items[k] }))];
   return `
 <nav class="next" aria-label="次に知りたいこと">
   <h2 class="next-h">次に知りたいこと</h2>
-  <div class="next-grid">
-  ${list.map((i) => `<a class="next-card${i.alert ? ' alert' : ''}" href="${esc(i.href)}" data-next="${esc(i.key)}"><span class="ni">${i.icon}</span><span class="nq">${esc(i.q)}</span><span class="na">${esc(i.a)}</span></a>`).join('')}
+  <div class="next-groups">
+  ${NEXT_GROUPS.map(({ g, n, t }) => `<section class="ng ng-${g}"><h3 class="ng-h"><span>${n}</span>${t}</h3><div class="ng-rows">
+    ${list.filter((i) => i.g === g).map((i) => `<a class="nrow${i.alert ? ' alert' : ''}" href="${esc(i.href)}" data-next="${esc(i.key)}"><span class="ni">${i.icon}</span><span class="nt"><span class="nq">${esc(i.q)}</span><span class="na">${esc(i.a)}</span></span><span class="ng-go" aria-hidden="true">›</span></a>`).join('')}
+  </div></section>`).join('')}
   </div>
 </nav>`;
 }
