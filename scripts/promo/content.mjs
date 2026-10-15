@@ -97,15 +97,88 @@ function topicPost(i) {
   return `💡明日話せるお金の話\n\n${t.doya}\n\n${t.title}👇\n${SITE}/topics/${t.slug}.html\n#お金の豆知識 #${t.tag.replace(/\s/g, '')}`;
 }
 
+// ─── 日記のような「お金メモ」（リンクなし） ─────────────────
+// ふだんはリンクを貼らず、読んだ人がその場で得をするメモだけを投稿する。宣伝は週1回（PROMO_EVERY日に1回）
+export const PROMO_EVERY = 7;
+const MEMO_HEAD = ['📝今日のお金メモ', '📝お金のメモ', '📝きょうの手取りメモ'];
+const DIARY_INCOMES = [300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 900];
+const ni = (i, list = DIARY_INCOMES) => list[i % list.length];
+const HOW_NISA = [
+  '新NISAの枠は、年360万円・一生で1,800万円まで。\n売った分の枠は翌年また使えるようになります。「一度使ったら終わり」ではないのがポイント。',
+  '新NISAは非課税で持てる期間が無期限。\n昔のNISAのように「5年で終わり」を気にしなくていいので、慌てて売らなくて大丈夫です。',
+  'NISAの「つみたて投資枠」は年120万円、「成長投資枠」は年240万円。\n両方あわせて使えます。まずは毎月の積立から始める人が多いですね。',
+  'iDeCo、会社員（企業年金なし）は2027年1月の掛金から上限が月2.3万→6.2万円に上がる予定です。\nただし原則60歳まで引き出せないので、使う予定のないお金で。',
+  'こどもNISAは2027年に始まる予定。0〜17歳が対象で、年60万円・総額600万円まで。\n12歳から教育費などに引き出せるのが、昔のジュニアNISAとの違いです。',
+];
+// 季節のメモ（月ごとに3つ。制度の説明は確実なものだけ）
+const SEASON = {
+  1: ['源泉徴収票が届く時期。\n「支払金額」が額面の年収、「源泉徴収税額」が1年間に払った所得税です。手取りの答え合わせに。', '1月はふるさと納税の「ワンストップ特例」の申請書の締め切り（1月10日必着）がある月。出し忘れていないか確認を。', '年が明けたら、去年の源泉徴収票で「年収」と「手取り」を一度見比べてみるのがおすすめ。差の大きさにびっくりするかも。'],
+  2: ['確定申告の時期（例年2月16日〜3月15日）。\n会社員でも、医療費が年10万円を超えた人などは申告で税金が戻ることがあります。', '会社員の「還付申告」は5年前までさかのぼってできます。医療費控除の出し忘れ、意外と多いです。', 'ふるさと納税で寄付先が6自治体以上になった人は、ワンストップ特例が使えないので確定申告が必要です。'],
+  4: ['4〜6月の給料の平均で、9月からの社会保険料が決まります。\nこの時期に残業が多いと、1年間保険料が高くなることも。', '新年度。昇給した人は、額面ではなく「手取りでいくら増えたか」を一度計算してみると現実が見えます。', '4〜6月の残業代も社会保険料の計算に入ります。「残業した分、まるまる得」とは限らないんですよね。'],
+  6: ['6月から住民税が新しい年度の額に変わります。\n去年の所得で決まるので、去年昇給した人は今月から天引きが増えるかも。', '住民税は「前の年の所得」にかかる税金。だから就職1年目は住民税がほとんど引かれず、2年目に手取りが減ったように感じます。', '夏のボーナスにも社会保険料と所得税がかかります。額面の8割くらいが手取りの目安です。'],
+  9: ['9月分から社会保険料が新しい額に（4〜6月の給料で決まったもの）。\n10月の給与明細で、保険料が変わっていないか見てみてください。', '給与明細の「健康保険」「厚生年金」は、会社も同じ額を払っています。実は見えないところで倍かかっているんです。', '秋は年末調整の準備期間。生命保険や地震保険の「控除証明書」が届いたら、捨てずに取っておきましょう。'],
+  11: ['年末調整の書類の季節。\n生命保険・地震保険の控除証明書、iDeCoを自分で払っている人は掛金の証明書を添付します。', 'ふるさと納税は1月1日〜12月31日の寄付がその年の分。年末は駆け込みで混むので、早めがおすすめ。', '年末調整で戻ってくるお金は、12月か1月の給料と一緒に入ることが多いです。給与明細の「年調還付」の欄を見てみて。'],
+};
+const seasonOf = (m) => SEASON[[0, 1, 2, 2, 4, 4, 6, 6, 9, 9, 11, 11, 11][m]];
+
+const DIARY = [
+  (i, date) => {
+    const n = ni(i); const r = calc(n);
+    const minus = (r.income - r.takeHome) / 12; const soc = r.social / 12; const tax = (r.incomeTax + r.residentTax) / 12;
+    return `年収${n}万円の手取りは、月にすると約${man(r.takeHomeMonthly)}万円。\n引かれるのは月${man(minus)}万円で、そのうち社会保険料が${man(soc)}万円、税金が${man(tax)}万円。\n${soc > tax ? '税金より保険料のほうが大きい、というのは意外と知られていない気がします。' : 'この年収になると、保険料より税金のほうが大きくなります。'}`;
+  },
+  (i) => {
+    const n = ni(i + 3); const r = calc(n); const u = calc(n + 50); const g = u.takeHome - r.takeHome;
+    return `年収が${n}万→${n + 50}万円に上がっても、手取りの増え方は約${man(g)}万円。\n増えた分のうち${pct(1 - g / 500000)}は税金と保険料に。\n昇給の話は「手取りでいくら」で考えると冷静になれます。`;
+  },
+  (i) => {
+    const n = ni(i, [400, 500, 600, 350, 700, 450, 800, 550]); const p = prefExtremes(n);
+    return `同じ年収${n}万円でも、${p.low}と${p.high}では手取りが年${yen(p.lowR.takeHome - p.highR.takeHome)}円違います。\n健康保険料の率が都道府県ごとに違うからなんですよね。`;
+  },
+  (i) => {
+    const t = topics()[i % topics().length];
+    const extra = t.points.find((x) => xWeight(`💡今日の豆知識\n\n${t.doya}\n\n${x}\n#お金の豆知識`) <= 270) || '';
+    return `💡今日の豆知識\n\n${t.doya}${extra ? `\n\n${extra}` : ''}`;
+  },
+  (i) => {
+    const n = ni(i + 5, [400, 500, 600, 700, 450, 550, 800, 650, 350]); const r = calc(n);
+    return r.furusato
+      ? `年収${n}万円・独身なら、ふるさと納税で自己負担2,000円に収まる寄付は約${man(r.furusato)}万円まで（目安）。\n家族構成やほかの控除で下がるので、少し余裕をもって。`
+      : `年収${n}万円だと住民税が少ないので、ふるさと納税の得はほとんどありません。無理にやらなくて大丈夫です。`;
+  },
+  (i) => {
+    const n = ni(i + 2, [350, 450, 500, 600, 700, 400, 550, 800]); const r = calc(n);
+    return `iDeCoに月2万円を出すと、年収${n}万円なら税金が年${yen(idecoSaving(r, 240000))}円減る計算です。\nただし原則60歳まで引き出せないので、まずは生活費の貯金を作ってから。`;
+  },
+  (i) => HOW_NISA[i % HOW_NISA.length],
+  (i, date) => { const m = Number(date.slice(5, 7)); return seasonOf(m)[i % 3]; },
+  (i) => {
+    const n = ni(i + 7); const a = calc(n); const b = calc(n, { over40: true });
+    return `40歳になると介護保険料が加わって、年収${n}万円なら手取りが年${yen(a.takeHome - b.takeHome)}円減ります。\n誕生日の前の日がある月から、というのも地味に知られていないポイント。`;
+  },
+  (i) => WALL_FACTS[i % WALL_FACTS.length]() + '\n越えるなら、手取りが元に戻る年収までしっかり越えるのがコツです。',
+];
+const TAGS = ['#お金の勉強', '#手取り', '#家計管理', '#お金の豆知識'];
+
+function diaryPost(k, date) {
+  const t = DIARY[k % DIARY.length](Math.floor(k / DIARY.length), date);
+  const head = /^💡/.test(t) ? '' : `${MEMO_HEAD[k % MEMO_HEAD.length]}\n\n`;
+  return `${head}${t}\n${TAGS[k % TAGS.length]}`;
+}
+
+// 宣伝（リンクつき）：豆知識と計算ツールの紹介を交互に
+function promoPost(k) {
+  if (k % 2) return topicPost(Math.floor(k / 2));
+  const d = Math.floor(k / 2);
+  return X_TEMPLATES[d % X_TEMPLATES.length](Math.floor(d / X_TEMPLATES.length));
+}
+
 export function xPost(date) {
   const day = dayIndex(date);
-  if (day % 2) {
-    const text = topicPost(Math.floor(day / 2));
-    return { kind: 'x', title: text.split('\n')[2] || text.split('\n')[0], body: text };
-  }
-  const d = Math.floor(day / 2);
-  const text = X_TEMPLATES[d % X_TEMPLATES.length](Math.floor(d / X_TEMPLATES.length));
-  return { kind: 'x', title: text.split('\n')[0], body: text };
+  const promo = day % PROMO_EVERY === 0;
+  const text = promo ? promoPost(Math.floor(day / PROMO_EVERY)) : diaryPost(day - Math.floor(day / PROMO_EVERY) - 1, date);
+  const first = text.split('\n').find((l) => l && !/^📝/.test(l)) || text.split('\n')[0];
+  return { kind: 'x', promo, title: first, body: text };
 }
 
 // ─── ブログ記事（はてなブログ・note 共通の Markdown） ───────────

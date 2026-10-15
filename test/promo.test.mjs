@@ -59,6 +59,7 @@ test('Bluesky のリンク・タグ位置（UTF-8バイト）が1年分すべて
     assert.ok(graphemes(text) <= 300, day(i));
     const buf = Buffer.from(text, 'utf8');
     const facets = blueskyFacets(text);
+    if (!xPost(day(i)).promo) { assert.ok(!/https?:/.test(text), `${day(i)}: ふだんの投稿にリンクがある`); continue; }
     assert.ok(facets.some((f) => f.features[0].$type.endsWith('#link')), `${day(i)}: リンクがない`);
     for (const f of facets) {
       const s = buf.subarray(f.index.byteStart, f.index.byteEnd).toString('utf8');
@@ -67,4 +68,13 @@ test('Bluesky のリンク・タグ位置（UTF-8バイト）が1年分すべて
     }
     assert.equal(blueskyRecord(text).embed.external.uri, facets.find((f) => f.features[0].uri).features[0].uri);
   }
+});
+
+test('宣伝（リンクつき）は週1回だけで、ふだんは日記のようなメモ', () => {
+  let promo = 0;
+  for (let i = 0; i < 70; i++) {
+    const p = xPost(day(i));
+    if (p.promo) { promo++; assert.match(p.body, /https:\/\//); } else assert.doesNotMatch(p.body, /https?:/);
+  }
+  assert.equal(promo, 10);
 });
