@@ -13,6 +13,14 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const config = JSON.parse(readFileSync(join(ROOT, 'site.config.json'), 'utf8'));
 export const SITE = config.siteUrl.replace(/\/$/, '');
 
+// アフィリエイト（site.config.json の affiliates）。URL が入っているものだけ記事に出し、「PR」と明記する
+export const adLink = (key, aff = config.affiliates || {}) => {
+  const a = aff[key];
+  return a?.url ? `\n\n👉 **[${a.label}](${a.url.replace(/^\/\//, 'https://')})**（PR）` : '';
+};
+// 広告リンクを含む記事は、冒頭に広告であることを書く（ステマ規制）
+export const disclose = (body) => (/（PR）/.test(body) ? `※この記事にはプロモーション（広告）が含まれます。\n\n${body}` : body);
+
 const calc = (n, opt = {}) => calcTakeHome({ income: n * 10000, ...opt });
 const pct = (x) => `${Math.round(x * 100)}%`;
 const POPULAR = [300, 350, 400, 450, 500, 550, 600, 650, 700, 800, 900, 1000];
@@ -264,7 +272,7 @@ const ARTICLES = [
         ['所得税', `${yen(r.incomeTax)}円`, `${yen(r.incomeTax / 12)}円`],
         ['住民税', `${yen(r.residentTax)}円`, `${yen(r.residentTax / 12)}円`],
         ['**手取り**', `**${yen(r.takeHome)}円**`, `**${yen(r.takeHomeMonthly)}円**`],
-      ])}\n\n額面の${pct(r.rate)}が手元に残ります。\n\n## 暮らしの目安\n\n- 家賃（手取りの25〜30%）：月${man(r.takeHomeMonthly * 0.25, 1)}〜${man(r.takeHomeMonthly * 0.3, 1)}万円\n- 貯金（手取りの10〜20%）：月${man(r.takeHomeMonthly * 0.1, 1)}〜${man(r.takeHomeMonthly * 0.2, 1)}万円\n\n## 結婚・年齢で変わる\n\n- 配偶者（収入なし）を扶養：年${man(married.takeHome)}万円（${married.takeHome >= r.takeHome ? '+' : '−'}${man(Math.abs(married.takeHome - r.takeHome))}万円）\n- 40歳以上（介護保険料あり）：年${man(over40.takeHome)}万円（−${man(r.takeHome - over40.takeHome)}万円）\n\n## 税金を減らす方法\n\n- ふるさと納税の上限の目安：約${man(r.furusato)}万円\n- iDeCoで月2万円積み立てると、税金が年約${man(idecoSaving(r, 240000))}万円軽くなります\n\n## 平均と比べると\n\n${AVERAGES.source}によると、1年を通じて勤務した給与所得者の平均年収は${AVERAGES.rows[0][1]}万円です。年収${n}万円は平均より${n >= AVERAGES.rows[0][1] ? `${n - AVERAGES.rows[0][1]}万円高い` : `${AVERAGES.rows[0][1] - n}万円低い`}水準です。${footer(`nenshu/${n}.html`, `年収${n}万円のグラフ・昇給シミュレーションを見る`)}`,
+      ])}\n\n額面の${pct(r.rate)}が手元に残ります。\n\n## 暮らしの目安\n\n- 家賃（手取りの25〜30%）：月${man(r.takeHomeMonthly * 0.25, 1)}〜${man(r.takeHomeMonthly * 0.3, 1)}万円\n- 貯金（手取りの10〜20%）：月${man(r.takeHomeMonthly * 0.1, 1)}〜${man(r.takeHomeMonthly * 0.2, 1)}万円\n\n## 結婚・年齢で変わる\n\n- 配偶者（収入なし）を扶養：年${man(married.takeHome)}万円（${married.takeHome >= r.takeHome ? '+' : '−'}${man(Math.abs(married.takeHome - r.takeHome))}万円）\n- 40歳以上（介護保険料あり）：年${man(over40.takeHome)}万円（−${man(r.takeHome - over40.takeHome)}万円）\n\n## 税金を減らす方法\n\n- ふるさと納税の上限の目安：約${man(r.furusato)}万円\n- iDeCoで月2万円積み立てると、税金が年約${man(idecoSaving(r, 240000))}万円軽くなります${adLink('furusato')}${adLink('ideco')}\n\n## 平均と比べると\n\n${AVERAGES.source}によると、1年を通じて勤務した給与所得者の平均年収は${AVERAGES.rows[0][1]}万円です。年収${n}万円は平均より${n >= AVERAGES.rows[0][1] ? `${n - AVERAGES.rows[0][1]}万円高い` : `${AVERAGES.rows[0][1] - n}万円低い`}水準です。${footer(`nenshu/${n}.html`, `年収${n}万円のグラフ・昇給シミュレーションを見る`)}`,
     };
   },
   // 扶養
@@ -317,7 +325,7 @@ function furusatoArticle(c) {
     body: `ふるさと納税は、上限の範囲内なら**自己負担2,000円**で返礼品がもらえる制度です。2026年の寄付の締め切りは**12月31日**。${who}の会社員について、上限の目安を年収別に計算しました。\n\n## 結論\n\n- 年収500万円（${who}）なら、上限の目安は**約${man(r5.furusato)}万円**\n- 年収が高いほど上限は上がります。家族を扶養していると、その分だけ少し下がります\n\n## 年収別の上限の目安（${who}）\n\n${table(['年収', '上限の目安', '手取り（年）'], ns.map((n) => {
       const r = calc(n, opt);
       return [`${n}万円`, r.furusato ? `約${yen(r.furusato)}円` : '—', `${man(r.takeHome)}万円`];
-    }))}\n\n## 申し込みの前に確認したいこと\n\n- **ワンストップ特例**：会社員で寄付先が5自治体以内なら、確定申告をしなくても申請書を出すだけで控除が受けられます（翌年1月10日必着）\n- **住宅ローン控除・医療費控除がある人**は、上限がこの表より下がることがあります\n- 上限を超えた分は自己負担になります。ぎりぎりを狙わず、少し余裕を持って寄付するのが安心です${footer('', '自分の条件でふるさと納税の上限を計算する')}${more()}`,
+    }))}\n\n## 申し込みの前に確認したいこと\n\n- **ワンストップ特例**：会社員で寄付先が5自治体以内なら、確定申告をしなくても申請書を出すだけで控除が受けられます（翌年1月10日必着）\n- **住宅ローン控除・医療費控除がある人**は、上限がこの表より下がることがあります\n- 上限を超えた分は自己負担になります。ぎりぎりを狙わず、少し余裕を持って寄付するのが安心です${adLink('furusato')}${footer('', '自分の条件でふるさと納税の上限を計算する')}${more()}`,
   };
 }
 
@@ -366,7 +374,7 @@ function guideArticle(c) {
     : '';
   return {
     title: g.title,
-    body: `${md(g.lead, base)}\n\n${table(['項目', '内容'], g.stats, true)}\n\n## 押さえておきたい4つのポイント\n\n${g.points.map(([icon, h, t]) => `### ${icon} ${h}\n\n${md(t, base)}`).join('\n\n')}${ideco}\n\n## 最近の変更・これからの予定\n\n${g.news.map((x) => `- ${md(x, base)}`).join('\n')}\n\n## 注意点\n\n${g.cautions.map((x) => `- ${x}`).join('\n')}\n\n## よくある質問\n\n${g.faq.map(([q, a]) => `**Q. ${q}**\n\n${a}`).join('\n\n')}\n\n出典：${g.src.map(srcLine).join('、')}${footer(`guide/${g.slug}.html`, '図解とシミュレーターで確かめる')}${more(g.slug === 'ideco' ? 'guide/ideco.html' : '')}`,
+    body: `${md(g.lead, base)}\n\n${table(['項目', '内容'], g.stats, true)}\n\n## 押さえておきたい4つのポイント\n\n${g.points.map(([icon, h, t]) => `### ${icon} ${h}\n\n${md(t, base)}`).join('\n\n')}${ideco}${adLink(g.cta)}\n\n## 最近の変更・これからの予定\n\n${g.news.map((x) => `- ${md(x, base)}`).join('\n')}\n\n## 注意点\n\n${g.cautions.map((x) => `- ${x}`).join('\n')}\n\n## よくある質問\n\n${g.faq.map(([q, a]) => `**Q. ${q}**\n\n${a}`).join('\n\n')}\n\n出典：${g.src.map(srcLine).join('、')}${footer(`guide/${g.slug}.html`, '図解とシミュレーターで確かめる')}${more(g.slug === 'ideco' ? 'guide/ideco.html' : '')}`,
   };
 }
 
@@ -410,7 +418,7 @@ export const ARTICLE_KEYS = (() => {
 export function articleByKey(key) {
   const [g, c] = key.split('-');
   const a = GROUPS.find(([name]) => name === g)[2](Number(c));
-  return { kind: 'article', key, title: a.title, body: a.body };
+  return { kind: 'article', key, title: a.title, body: disclose(a.body) };
 }
 
 // 次に出す記事：まだ出していない（used に含まれない）ものを一覧の順に。全部出したら最初から
