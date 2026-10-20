@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { calcTakeHome, idecoSaving, PREF_HEALTH, RULES, yen, man } from '../../src/tax.js';
 import { AVERAGES } from '../../src/view.js';
 import { topics } from '../../src/topics.js';
+import { guides } from '../../src/guides.js';
+import { PART_WALLS, IMPACT_LABEL } from '../../src/walls.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const config = JSON.parse(readFileSync(join(ROOT, 'site.config.json'), 'utf8'));
@@ -182,7 +184,7 @@ export function xPost(date) {
 }
 
 // ─── ブログ記事（はてなブログ・note 共通の Markdown） ───────────
-const table = (head, rows) => `| ${head.join(' | ')} |\n|${head.map((_, i) => (i ? '---:' : '---')).join('|')}|\n${rows.map((r) => `| ${r.join(' | ')} |`).join('\n')}`;
+const table = (head, rows, left = false) => `| ${head.join(' | ')} |\n|${head.map((_, i) => (i && !left ? '---:' : '---')).join('|')}|\n${rows.map((r) => `| ${r.join(' | ')} |`).join('\n')}`;
 const footer = (path, text) => `\n\n---\n\n**${text}** → [手取りナビ](${SITE}/${path})\n\n※${RULES.label}の制度で計算した概算です（会社員・賞与なし・協会けんぽ東京都・独身・40歳未満が基本の前提）。実際の金額は勤務先・自治体・各種控除で変わります。計算方法と出典は[こちら](${SITE}/about.html)。`;
 
 const ARTICLES = [
@@ -248,7 +250,7 @@ const ARTICLES = [
   },
   // 年収別の徹底解説（年収を順番に）
   (cycle) => {
-    const n = [500, 400, 600, 700, 300, 800, 1000][cycle % 7];
+    const n = NENSHU[cycle % NENSHU.length];
     const r = calc(n);
     const married = calc(n, { spouse: true });
     const over40 = calc(n, { over40: true });
@@ -280,8 +282,153 @@ const ARTICLES = [
   },
 ];
 
+
+// 年収別・月給別の記事にする金額（「年収○万 手取り」「月給○万 手取り」で検索されやすい順）
+const NENSHU = [500, 400, 600, 300, 450, 350, 700, 550, 800, 650, 250, 1000, 750, 900, 480, 520, 380, 420, 850, 1200, 280, 950, 1100, 1500];
+const GEKKYU = [25, 30, 20, 35, 22, 28, 40, 18, 24, 32, 45, 26, 50, 23, 38, 27, 60, 21];
+
+// サイト内の HTML（<b>・相対リンク）をブログの Markdown に直す
+const md = (html, base) => String(html)
+  .replace(/<b>(.*?)<\/b>/g, '**$1**')
+  .replace(/<a href="([^"]+)">(.*?)<\/a>/g, (_, href, t) => `[${t}](${/^https?:/.test(href) ? href : `${base}/${href}`})`)
+  .replace(/<[^>]+>/g, '');
+const srcLine = ([name, url]) => (url ? `[${name}](${url})` : name);
+
+const MORE = [
+  ['nenshu/', '年収別の手取り早見表'],
+  ['kabe.html', '手取りが減る「年収の壁」'],
+  ['guide/ideco.html', 'iDeCoの節税額シミュレーター'],
+  ['topics/', '明日話せるお金の豆知識'],
+];
+const more = (skip) => `\n\n## あわせて読みたい\n\n${MORE.filter(([p]) => p !== skip).slice(0, 3).map(([p, t]) => `- [${t}](${SITE}/${p})`).join('\n')}`;
+
+// ふるさと納税の上限（年末の締め切り前に読まれる）
+const FAMILIES = [
+  ['独身', {}, '独身・共働き'],
+  ['夫婦（配偶者を扶養）', { spouse: true }, '配偶者を扶養'],
+  ['夫婦＋子（16歳以上の子1人を扶養）', { spouse: true, dependents: 1 }, '配偶者と高校生以上の子を扶養'],
+];
+function furusatoArticle(c) {
+  const [who, opt, short] = FAMILIES[c % FAMILIES.length];
+  const ns = [300, 350, 400, 450, 500, 550, 600, 700, 800, 900, 1000, 1200];
+  const r5 = calc(500, opt);
+  return {
+    title: `【2026年】ふるさと納税の上限はいくら？年収別の早見表（${short}）`,
+    body: `ふるさと納税は、上限の範囲内なら**自己負担2,000円**で返礼品がもらえる制度です。2026年の寄付の締め切りは**12月31日**。${who}の会社員について、上限の目安を年収別に計算しました。\n\n## 結論\n\n- 年収500万円（${who}）なら、上限の目安は**約${man(r5.furusato)}万円**\n- 年収が高いほど上限は上がります。家族を扶養していると、その分だけ少し下がります\n\n## 年収別の上限の目安（${who}）\n\n${table(['年収', '上限の目安', '手取り（年）'], ns.map((n) => {
+      const r = calc(n, opt);
+      return [`${n}万円`, r.furusato ? `約${yen(r.furusato)}円` : '—', `${man(r.takeHome)}万円`];
+    }))}\n\n## 申し込みの前に確認したいこと\n\n- **ワンストップ特例**：会社員で寄付先が5自治体以内なら、確定申告をしなくても申請書を出すだけで控除が受けられます（翌年1月10日必着）\n- **住宅ローン控除・医療費控除がある人**は、上限がこの表より下がることがあります\n- 上限を超えた分は自己負担になります。ぎりぎりを狙わず、少し余裕を持って寄付するのが安心です${footer('', '自分の条件でふるさと納税の上限を計算する')}${more()}`,
+  };
+}
+
+// 月給別（「月給30万 手取り」）
+function gekkyuArticle(c) {
+  const m = GEKKYU[c % GEKKYU.length];
+  const r = calcTakeHome({ income: m * 120000 });
+  const near = [-5, -2, 0, 2, 5].map((d) => m + d).filter((x) => x >= 15);
+  return {
+    title: `月給${m}万円の手取りは約${man(r.takeHomeMonthly)}万円【2026年】年収・内訳・ボーナスありの場合`,
+    body: `月給（額面）${m}万円の会社員の手取りを、2026年の制度で計算しました（ボーナスなし・独身・40歳未満・東京都）。\n\n## 結論：手取りは月約${man(r.takeHomeMonthly)}万円\n\n- 年収にすると${m * 12}万円、手取りは年${man(r.takeHome)}万円\n- 額面の${pct(r.rate)}が手元に残り、約${man(r.income / 12 - r.takeHomeMonthly)}万円が毎月の税金・社会保険料です\n\n## 毎月引かれるもの\n\n${table(['項目', '月額'], [
+      ['健康保険料（子ども・子育て支援金含む）', `${yen(r.health / 12)}円`],
+      ['厚生年金保険料', `${yen(r.pension / 12)}円`],
+      ['雇用保険料', `${yen(r.koyou / 12)}円`],
+      ['所得税', `${yen(r.incomeTax / 12)}円`],
+      ['住民税', `${yen(r.residentTax / 12)}円`],
+      ['**手取り**', `**${yen(r.takeHomeMonthly)}円**`],
+    ])}\n\n※税金は年額を12で割った平均です。実際は、住民税は前年の所得で決まり（新卒1年目はかからない）、所得税は年末調整で精算されます。\n\n## 近い月給と比べる\n\n${table(['月給', '手取り（月）', '手取り（年）'], near.map((x) => {
+      const q = calcTakeHome({ income: x * 120000 });
+      return [`${x}万円`, `${man(q.takeHomeMonthly)}万円`, `${man(q.takeHome)}万円`];
+    }))}\n\n## ボーナスがある場合\n\nボーナスが年2か月分（${m * 2}万円）あると年収は${m * 14}万円になり、手取りは年${man(calcTakeHome({ income: m * 140000, bonus: m * 20000 }).takeHome)}万円です。${footer(`?mode=month&monthly=${m}`, 'ボーナス・都道府県を入れて手取りを計算する')}${more()}`,
+  };
+}
+
+// 豆知識（src/topics.js）をくわしい記事に
+function topicArticle(c) {
+  const all = topics();
+  const t = all[c % all.length];
+  const others = all.filter((x) => x.slug !== t.slug && x.tag === t.tag).concat(all.filter((x) => x.tag !== t.tag)).slice(0, 3);
+  return {
+    title: `${t.title}【2026年・お金の豆知識】`,
+    body: `> ${t.doya}\n\n知っていると、ちょっと人に話したくなるお金の話です。\n\n## ポイント\n\n${t.points.map((x) => `- ${md(x, SITE)}`).join('\n')}\n\n## もっとくわしく\n\n- [${t.link[1]}](${SITE}${t.link[0]})\n- [この豆知識のページ](${SITE}/topics/${t.slug}.html)\n\n出典：${srcLine(t.src)}\n\n## ほかの豆知識\n\n${others.map((x) => `- [${x.title}](${SITE}/topics/${x.slug}.html)`).join('\n')}${footer('topics/', '明日話せるお金の豆知識をもっと読む')}`,
+  };
+}
+
+// トレンド解説（src/guides.js）。iDeCo は年収別の節税額の表つき
+function guideArticle(c) {
+  const all = guides();
+  const g = all[c % all.length];
+  const base = `${SITE}/guide`;
+  const ideco = g.slug === 'ideco'
+    ? `\n\n## 年収別：iDeCoで税金はいくら減る？（会社員・独身・企業年金なし）\n\n${table(['年収', '月2.3万円（今の上限）', '月6.2万円（2027年〜）'], [300, 400, 500, 600, 700, 800, 1000].map((n) => {
+      const r = calc(n);
+      return [`${n}万円`, `年${yen(idecoSaving(r, 276000))}円`, `年${yen(idecoSaving(r, 744000))}円`];
+    }))}\n\n所得税と住民税の合計です。掛金を引いた後の課税所得で計算しているので、年収が低い人は上限まで積み立てても節税額が頭打ちになります。`
+    : '';
+  return {
+    title: g.title,
+    body: `${md(g.lead, base)}\n\n${table(['項目', '内容'], g.stats, true)}\n\n## 押さえておきたい4つのポイント\n\n${g.points.map(([icon, h, t]) => `### ${icon} ${h}\n\n${md(t, base)}`).join('\n\n')}${ideco}\n\n## 最近の変更・これからの予定\n\n${g.news.map((x) => `- ${md(x, base)}`).join('\n')}\n\n## 注意点\n\n${g.cautions.map((x) => `- ${x}`).join('\n')}\n\n## よくある質問\n\n${g.faq.map(([q, a]) => `**Q. ${q}**\n\n${a}`).join('\n\n')}\n\n出典：${g.src.map(srcLine).join('、')}${footer(`guide/${g.slug}.html`, '図解とシミュレーターで確かめる')}${more(g.slug === 'ideco' ? 'guide/ideco.html' : '')}`,
+  };
+}
+
+// 扶養内パート・学生の年収の壁（src/walls.js）
+function partArticle(c) {
+  const keys = Object.keys(PART_WALLS);
+  const k = keys[c % keys.length];
+  const w = PART_WALLS[k];
+  const student = k !== 'spouse';
+  const big = w.walls.filter((x) => x.impact === 3);
+  const at = (x) => (x.at ? `${x.at}万円` : x.label);
+  return {
+    title: student
+      ? '【2026年】学生バイトの年収の壁まとめ｜150万円・159万円・197万円、親への影響は？'
+      : '【2026年】扶養内パートの年収の壁まとめ｜本当に気をつけるのは2つだけ',
+    body: `2026年は税制改正と社会保険の見直しで、${w.label}の「年収の壁」が大きく変わりました。給与収入だけの場合の壁を、年収の低い順にまとめます。\n\n## 結論：手取りが大きく減るのは${big.map(at).join('と')}\n\n${big.map((x) => `- **${at(x)}**：${x.title}`).join('\n')}\n\nそれ以外の壁は、超えても影響が小さいか、${student ? '親' : '配偶者'}の税金が少しずつ増えるだけです。\n\n## 年収の壁一覧\n\n${table(['年収', '何が起きる', 'だれに', '手取りへの影響'], w.walls.map((x) => [at(x), x.title, x.who, IMPACT_LABEL[x.impact]]), true)}\n\n## 壁ごとのくわしい説明\n\n${w.walls.map((x) => `### ${at(x)}：${x.title}\n\n${x.what}${x.note ? `\n\n${x.note}` : ''}`).join('\n\n')}\n\n出典：${[...new Map(w.walls.map((x) => [x.src[0], x.src])).values()].map(srcLine).join('、')}${footer('part-kabe.html', '年収スライダーで、越えた壁を確かめる')}${more()}`,
+  };
+}
+
+// 記事の一覧。種類ごとに1本ずつ順番に出すので、同じ種類が続かない
+const GROUPS = [
+  ['furusato', FAMILIES.length, furusatoArticle],
+  ['nenshu', NENSHU.length, ARTICLES[4]],
+  ['topic', topics().length, topicArticle],
+  ['gekkyu', GEKKYU.length, gekkyuArticle],
+  ['guide', guides().length, guideArticle],
+  ['kabe', 2, ARTICLES[1]],
+  ['part', Object.keys(PART_WALLS).length, partArticle],
+  ['pref', 4, ARTICLES[0]],
+  ['raise', 3, ARTICLES[2]],
+  ['fuyou', 2, ARTICLES[5]],
+  ['bonus', 3, ARTICLES[3]],
+];
+export const ARTICLE_KEYS = (() => {
+  const keys = [];
+  const max = Math.max(...GROUPS.map(([, n]) => n));
+  for (let c = 0; c < max; c++) for (const [g, n] of GROUPS) if (c < n) keys.push(`${g}-${c}`);
+  return keys;
+})();
+
+export function articleByKey(key) {
+  const [g, c] = key.split('-');
+  const a = GROUPS.find(([name]) => name === g)[2](Number(c));
+  return { kind: 'article', key, title: a.title, body: a.body };
+}
+
+// 次に出す記事：まだ出していない（used に含まれない）ものを一覧の順に。全部出したら最初から
+export function nextArticle(used = []) {
+  const done = new Set(used);
+  const key = ARTICLE_KEYS.find((k) => !done.has(k)) ?? ARTICLE_KEYS[used.length % ARTICLE_KEYS.length];
+  return articleByKey(key);
+}
+
+// 出した記録がないとき（プレビュー）は日付で選ぶ
 export function article(date) {
-  const w = Math.floor(dayIndex(date) / 7);
-  const a = ARTICLES[w % ARTICLES.length](Math.floor(w / ARTICLES.length));
-  return { kind: 'article', title: a.title, body: a.body };
+  return articleByKey(ARTICLE_KEYS[dayIndex(date) % ARTICLE_KEYS.length]);
+}
+
+// はてなブログのカテゴリ（タイトルから）
+export function categoriesFor(title) {
+  const cats = ['手取り', 'お金'];
+  for (const [re, c] of [[/ふるさと納税/, 'ふるさと納税'], [/iDeCo/, 'iDeCo'], [/NISA/, 'NISA'], [/壁/, '年収の壁'], [/扶養|パート|学生/, '扶養'],
+    [/年収\d+万円の手取り/, '年収別'], [/月給/, '月給別'], [/豆知識/, '豆知識'], [/ボーナス|社会保険|年金/, '社会保険']]) if (re.test(title)) cats.push(c);
+  return cats;
 }

@@ -48,14 +48,14 @@ export function hatenaEntry(title, markdown, categories = ['手取り', '年収'
 </entry>`;
 }
 
-export async function postToHatena(title, markdown, env = process.env) {
+export async function postToHatena(title, markdown, env = process.env, categories) {
   env = clean(env);
   const need = ['HATENA_ID', 'HATENA_BLOG_ID', 'HATENA_API_KEY'];
   const missing = need.filter((k) => !env[k]);
   if (missing.length) throw new Error(`はてなブログの認証情報が未設定です: ${missing.join(', ')}`);
   const url = `https://blog.hatena.ne.jp/${env.HATENA_ID}/${env.HATENA_BLOG_ID}/atom/entry`;
   const auth = Buffer.from(`${env.HATENA_ID}:${env.HATENA_API_KEY}`).toString('base64');
-  const res = await fetch(url, { method: 'POST', headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/xml' }, body: hatenaEntry(title, markdown) });
+  const res = await fetch(url, { method: 'POST', headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/xml' }, body: hatenaEntry(title, markdown, categories) });
   const text = await res.text();
   if (!res.ok) throw new Error(`はてなブログへの投稿に失敗しました（${res.status}）: ${text.slice(0, 300)}`);
   const m = text.match(/<link rel="alternate" type="text\/html" href="([^"]+)"/);

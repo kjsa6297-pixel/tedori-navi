@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { oauthSignature, hatenaEntry } from '../scripts/promo/publish.mjs';
-import { xPost, xWeight, article } from '../scripts/promo/content.mjs';
+import { xPost, xWeight, article, ARTICLE_KEYS, articleByKey, nextArticle, categoriesFor } from '../scripts/promo/content.mjs';
 import { issueBody, extract } from '../scripts/promo/issue.mjs';
 
 test('OAuth 1.0a 署名が 𝕏 公式ドキュメントの例と一致する', () => {
@@ -77,4 +77,37 @@ test('宣伝（リンクつき）は週1回だけで、ふだんは日記のよ�
     if (p.promo) { promo++; assert.match(p.body, /https:\/\//); } else assert.doesNotMatch(p.body, /https?:/);
   }
   assert.equal(promo, 10);
+});
+
+test('記事の一覧はすべて作れて、タイトルが重複せず、HTML の残りや壊れた値がない', () => {
+  assert.ok(ARTICLE_KEYS.length >= 70, `${ARTICLE_KEYS.length}本`);
+  const titles = new Set();
+  for (const k of ARTICLE_KEYS) {
+    const a = articleByKey(k);
+    assert.ok(a.title.length > 10 && a.body.length > 400, k);
+    assert.ok(!/NaN|undefined|null|<\/?[a-z]/.test(a.title + a.body), k);
+    assert.ok(!titles.has(a.title), `${k}: タイトルが重複`);
+    titles.add(a.title);
+    assert.ok(a.body.includes('https://'), `${k}: サイトへのリンクがない`);
+  }
+});
+
+test('記事はまだ出していないものを順に選び、同じ種類が続かない', () => {
+  const used = [];
+  for (let i = 0; i < ARTICLE_KEYS.length; i++) used.push(nextArticle(used).key);
+  assert.equal(new Set(used).size, ARTICLE_KEYS.length);
+  for (let i = 1; i < 11; i++) assert.notEqual(used[i].split('-')[0], used[i - 1].split('-')[0]);
+  assert.ok(nextArticle(used).key);
+});
+
+test('記事の Issue には記録用の印が付き、投稿内容には含まれない', () => {
+  const a = nextArticle([]);
+  const body = issueBody(a);
+  assert.match(body, new RegExp(`<!-- article:${a.key} -->`));
+  assert.doesNotMatch(extract(body), /article:/);
+});
+
+test('はてなブログのカテゴリをタイトルから付ける', () => {
+  assert.deepEqual(categoriesFor('【2026年】ふるさと納税の上限はいくら？'), ['手取り', 'お金', 'ふるさと納税']);
+  assert.ok(categoriesFor('年収500万円の手取りは月32万円【2026年】').includes('年収別'));
 });
