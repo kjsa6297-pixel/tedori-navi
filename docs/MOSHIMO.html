@@ -52,15 +52,16 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 <div class="wrap">
 <header>
   <h1>もしもアフィリエイトのルール</h1>
-  <p class="meta">手取りナビ用のまとめ ／ 2026年10月20日に公式ページを読んで作成（利用規約は2026年5月18日改定版）</p>
+  <p class="meta">手取りナビ用のまとめ ／ 2026年10月20日に公式ページと会員向けの3つのガイドライン（登録審査・運営・SNS/YouTube）を読んで作成（利用規約は2026年5月18日改定版）</p>
 </header>
 
 <section class="box summary" aria-label="3行でいうと">
-  <h2 style="border:0;padding:0">3行でいうと</h2>
+  <h2 style="border:0;padding:0">4行でいうと</h2>
   <ol>
     <li>広告は「提携したサイト」にだけ、もらったリンクを変えずに貼る</li>
     <li>うそ・大げさ・まぎらわしい書き方をしない（ランキングや体験談も同じ）</li>
     <li>報酬は月末締めの翌々月末払い。1,000円未満は翌月以降に繰り越し</li>
+    <li>AI で作った記事は、人が確認してから出す（自動投稿にしない）</li>
   </ol>
 </section>
 
@@ -155,13 +156,70 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </section>
 
 <section>
-  <h2>まだ読めていないもの</h2>
-  <div class="box todo">
-    <p>次の3つは、会員ログインが必要なページにあるため、まだ読めていません。登録画面のリンクから本文をコピーしてチャットに貼ってもらえれば、このページに追加します。</p>
+  <h2>手取りナビで対応が必要なこと（3つのガイドラインより）</h2>
+  <div class="box warn">
+    <p><strong>1. AI で作った文章は、人が確認してから出す</strong></p>
+    <p>「人の目で校正・事実確認をしていない」「運営者の視点や感想があると判断しにくい」AI記事は、登録削除の対象です。手取りナビの記事は計算プログラムで作っていて、そのプログラムは AI（Claude）が書いています。だから<strong>ブログ記事は今の「承認してから投稿」を続ける</strong>のが安全です。自動投稿（promo.auto）に切り替えるのはやめておきましょう。「生成AIにより作成」などと AI を使っていることを書くのは「推奨」です。</p>
+  </div>
+  <div class="box warn">
+    <p><strong>2. 運営者情報と会員情報が一致しているか</strong></p>
+    <p>「メディアの運営者情報と会員情報が一致せず、運営権限が不明」なメディアは登録削除の例に入っています。サイトの運営者は「手取りナビ編集部」なので、問い合わせが来たら、GitHub のアカウント名（URL の kjsa6297-pixel）で自分のサイトだと説明できるようにしておきましょう。</p>
+  </div>
+  <div class="box warn">
+    <p><strong>3. SNS（𝕏・Bluesky）にはアフィリエイトリンクを貼らない</strong></p>
+    <p>𝕏 はフォロワー3,000人以上でないと広告を載せられません。登録できる SNS は YouTube・𝕏・Instagram だけで、Bluesky は入っていません。今の SNS 投稿は自分のサイトへのリンクだけなので問題ありません。ただ「登録できないメディアから登録メディアへ誘導して集客するのも控えて」という一文があります（例は LINE・Facebook）。Bluesky がこれに当たるかは書かれていないので、気になる場合はもしものサポートに確認しましょう。</p>
+  </div>
+  <div class="box">
+    <h3>はてなブログを登録するとき</h3>
     <ul class="plain">
-      <li>メディア登録審査ガイドライン</li>
-      <li>メディア運営ガイドライン</li>
-      <li>SNS・YouTube掲載におけるガイドライン</li>
+      <li>記事が<strong>5本以上</strong>あり、最近も更新していること</li>
+      <li>URL に自分のアカウント名が入っていること（kou-kj.hatenablog.com なので OK）</li>
+      <li>広告リンクは「リンクを作るときに選んだメディア」にだけ貼る。サイト用のリンクをブログに使い回さない</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>メディア登録審査で落ちる・削除されるメディア</h2>
+  <div class="box">
+    <ul class="plain">
+      <li><strong>中身がない</strong>：開けない・真っ白、5記事未満、タイトルだけ、テスト記事だけ、最近更新していない</li>
+      <li><strong>独自のコンテンツが少ない</strong>：まとめ・引用・転載・リンクだけで、運営者自身の考察や経験がない</li>
+      <li><strong>誰でも見られない</strong>：パスワードが必要、管理画面の URL、特定のアプリでしか見られない、セキュリティ警告が出る</li>
+      <li><strong>自分のものか不明</strong>：運営者名が違う、ブログサービスの URL に自分のアカウント名がない</li>
+      <li><strong>AI の安易な利用</strong>：校正・事実確認なし、AI に書かせた口コミ・レビュー、企業名やキャラクターに似せた生成物</li>
+      <li><strong>本人申込を助長</strong>：報酬目的の申し込みを勧める、リンクを押すように促す</li>
+      <li>ほかに、アダルト・出会い系・ギャンブル・違法行為・リスクの高い金融商品・誇大な健康効果・著作権や肖像権の侵害・景品表示法や薬機法に触れる表現・誹謗中傷など</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>メディア運営ガイドラインの要点</h2>
+  <div class="box">
+    <ul class="plain">
+      <li><strong>アフィリエイトを使っていることを表示する</strong>：「PR」「広告」「本ページはプロモーションが含まれています」など（ステマは2023年10月から景品表示法違反）</li>
+      <li><strong>押させる言い方をしない</strong>：「このリンクから購入してください」はNG。自然に案内するのはOK</li>
+      <li><strong>大げさ・あいまいな表現をしない</strong>：「業界最安値」「激安」「実質○円」など根拠のない表現、広告主のページにないことを書き足すのはNG</li>
+      <li><strong>中身のないページにしない</strong>：広告と薄い文章だけの「ブリッジページ」はNG</li>
+      <li><strong>集め方を隠さない</strong>：どこから読者が来たか聞かれたら正直に答える。連絡に返事をしないとアカウント停止もある</li>
+      <li><strong>アカウントは1人1つ</strong>、登録内容は正確に</li>
+      <li><strong>小遣い稼ぎで誘わない</strong>：使うつもりのない人を報酬目的で誘導しない</li>
+      <li><strong>もしもを通さず広告主と直接取引しない</strong>（許可がある場合を除く）</li>
+      <li>引用するときは、出典（サイト名と URL）を必ず書く。（c）表記だけでは足りない</li>
+      <li>広告主ごとの注意事項（プロモーション詳細ページ）も守る</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>SNS・YouTube に載せる場合</h2>
+  <div class="box">
+    <ul class="plain">
+      <li>登録できるのは YouTube・𝕏・Instagram（LINE・Facebook は不可）。非公開アカウントは不可</li>
+      <li>𝕏：<strong>フォロワー3,000人以上</strong>だけ。投稿に「PR」「ad」などを付ける</li>
+      <li>Instagram：タイアップ投稿の設定が必要</li>
+      <li>NG：PRだと隠す、いいね・フォロー・チャンネル登録を促す、公式と間違われる名前やロゴ、現金・金券を配る</li>
     </ul>
   </div>
 </section>
@@ -174,6 +232,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <a href="https://af.moshimo.com/af/www/about/ppcGuideline">検索連動型広告、ディスプレイ広告／SNS広告 出稿ガイドライン</a> ／
     <a href="https://af.moshimo.com/af/www/about/safetyAffiliate">安心のアフィリエイトネットワーク作り</a>
   </p>
+  <p>会員向けの3つのガイドラインは、もしもアフィリエイトの管理画面（メディア登録 → 登録ガイドラインの確認）で読めます。</p>
   <p>このページは読みやすく言いかえた要約です。判断に迷うときは原文を確認してください。</p>
 </footer>
 </div>
