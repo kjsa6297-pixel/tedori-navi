@@ -13,10 +13,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const config = JSON.parse(readFileSync(join(ROOT, 'site.config.json'), 'utf8'));
 export const SITE = config.siteUrl.replace(/\/$/, '');
 
-// アフィリエイト（site.config.json の affiliates）。URL が入っているものだけ記事に出し、「PR」と明記する
-export const adLink = (key, aff = config.affiliates || {}) => {
+// アフィリエイト（site.config.json の affiliates）。URL が入っているものだけ記事に出し、「PR」と明記する。
+// もしもの規約：リンクは改変しない（第30条①）、提携していないメディアには載せない（第30条④）。
+// はてなブログをメディア登録して提携するまでは promo.blogAds を false のままにする
+export const adLink = (key, aff = config.affiliates || {}, on = Boolean(config.promo?.blogAds)) => {
   const a = aff[key];
-  return a?.url ? `\n\n👉 **[${a.label}](${a.url.replace(/^\/\//, 'https://')})**（PR）` : '';
+  return on && a?.url ? `\n\n👉 **[${a.label}](${a.url})**（PR）` : '';
 };
 // 広告リンクを含む記事は、冒頭に広告であることを書く（ステマ規制）
 export const disclose = (body) => (/（PR）/.test(body) ? `※この記事にはプロモーション（広告）が含まれます。\n\n${body}` : body);

@@ -113,9 +113,11 @@ test('はてなブログのカテゴリをタイトルから付ける', () => {
 });
 
 test('アフィリエイトは URL があるときだけ「PR」つきで出し、記事の冒頭に広告の表示を入れる', () => {
-  assert.equal(adLink('furusato', { furusato: { url: '', label: 'x' } }), '');
-  const l = adLink('furusato', { furusato: { url: '//af.moshimo.com/af/c/click?a_id=1', label: '返礼品を探す' } });
-  assert.match(l, /\[返礼品を探す\]\(https:\/\/af\.moshimo\.com\/af\/c\/click\?a_id=1\)\*\*（PR）/);
+  const aff = { furusato: { url: '//af.moshimo.com/af/c/click?a_id=1', label: '返礼品を探す' } };
+  assert.equal(adLink('furusato', { furusato: { url: '', label: 'x' } }, true), '');
+  assert.equal(adLink('furusato', aff, false), '', 'はてなブログが未提携の間は出さない');
+  const l = adLink('furusato', aff, true);
+  assert.ok(l.includes('[返礼品を探す](//af.moshimo.com/af/c/click?a_id=1)**（PR）'), 'リンクは改変しない');
   assert.match(disclose(`本文${l}`), /^※この記事にはプロモーション（広告）が含まれます。/);
   assert.equal(disclose('本文'), '本文');
 });

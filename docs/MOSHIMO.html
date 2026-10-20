@@ -1,0 +1,179 @@
+<title>もしもアフィリエイトのルール</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Maru+Gothic:wght@700&display=swap">
+<style>
+/* 1カラムの読みもの。結論→自分のチェック→お金→規約の順。色は「やる＝緑」「やらない＝赤」「注意＝黄」の3つだけに意味を持たせる */
+:root {
+  --bg: #f6f8f7; --surface: #ffffff; --fg: #1d2622; --muted: #5a6a63; --line: #d9e2de;
+  --accent: #1f7a5a; --accent-soft: #e2f1ea;
+  --ng: #b3261e; --ng-soft: #fbe9e7; --warn: #8a5a00; --warn-soft: #fff4d6;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  --f-head: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131917; --surface: #1b2420; --fg: #e6eeea; --muted: #a2b3ab; --line: #2e3b36;
+  --accent: #5cc79c; --accent-soft: #1c3329; --ng: #ff8a80; --ng-soft: #3a1f1d; --warn: #f2c35b; --warn-soft: #362c14; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131917; --surface: #1b2420; --fg: #e6eeea; --muted: #a2b3ab; --line: #2e3b36;
+  --accent: #5cc79c; --accent-soft: #1c3329; --ng: #ff8a80; --ng-soft: #3a1f1d; --warn: #f2c35b; --warn-soft: #362c14; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.8; }
+.wrap { max-width: 720px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--f-head); line-height: 1.4; text-wrap: balance; margin: 0; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.25rem; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+h3 { font-size: 1.05rem; }
+p { margin: 0; }
+.meta { color: var(--muted); font-size: .85rem; margin-top: 6px; }
+section { display: grid; gap: 14px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
+.summary { background: var(--accent-soft); border-color: transparent; }
+.summary ol { margin: 0; padding-left: 1.4em; display: grid; gap: 6px; font-weight: 700; }
+ul.check { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+ul.check li { display: grid; grid-template-columns: 2.2em 1fr; gap: 8px; align-items: start; }
+.mark { display: inline-grid; place-items: center; width: 2em; height: 2em; border-radius: 50%; font-weight: 700; font-size: .9rem; }
+.do .mark { background: var(--accent-soft); color: var(--accent); }
+.dont .mark { background: var(--ng-soft); color: var(--ng); }
+.why { color: var(--muted); font-size: .85rem; display: block; }
+.warn { background: var(--warn-soft); border-color: transparent; }
+.warn strong { color: var(--warn); }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.tbl { overflow-x: auto; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { width: 9em; color: var(--muted); font-weight: 700; }
+td { font-variant-numeric: tabular-nums; }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.src { font-size: .8rem; color: var(--muted); }
+.todo { border: 2px dashed var(--line); background: transparent; }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>もしもアフィリエイトのルール</h1>
+  <p class="meta">手取りナビ用のまとめ ／ 2026年10月20日に公式ページを読んで作成（利用規約は2026年5月18日改定版）</p>
+</header>
+
+<section class="box summary" aria-label="3行でいうと">
+  <h2 style="border:0;padding:0">3行でいうと</h2>
+  <ol>
+    <li>広告は「提携したサイト」にだけ、もらったリンクを変えずに貼る</li>
+    <li>うそ・大げさ・まぎらわしい書き方をしない（ランキングや体験談も同じ）</li>
+    <li>報酬は月末締めの翌々月末払い。1,000円未満は翌月以降に繰り越し</li>
+  </ol>
+</section>
+
+<section>
+  <h2>手取りナビで気をつけること</h2>
+  <div class="box">
+    <h3>やること</h3>
+    <ul class="check do">
+      <li><span class="mark">○</span><span>広告リンクは<strong>コピーしたまま</strong>使う<span class="why">広告素材・リンクを許可なく変えるのは禁止（利用規約 第30条①）。Claude が組み込むときも中身は変えません</span></span></li>
+      <li><span class="mark">○</span><span>はてなブログにも広告を載せるときは、<strong>はてなブログも別のメディアとして登録</strong>し、広告ごとに提携してから<span class="why">提携していないメディアへの掲載は禁止（第30条④）。登録には記事5本以上が必要なので、記事がたまってから</span></span></li>
+      <li><span class="mark">○</span><span>広告には「PR」、広告を含む記事には「プロモーションを含みます」と書く<span class="why">消費者の判断を誤らせる表示は禁止（第6条・第13条③）。ステマ規制への対応も兼ねます（サイト・記事とも実装済み）</span></span></li>
+      <li><span class="mark">○</span><span>文章・図・キャラクターは自分たちで作ったものだけ使う<span class="why">他人の文章や写真の無断使用、引用ルールを守らない引用は違反例として明記されています</span></span></li>
+      <li><span class="mark">○</span><span>登録から<strong>6か月以内</strong>に広告を使ったコンテンツを作る<span class="why">作らないと契約を解除されることがあります（第6条①・第14条⑩）</span></span></li>
+      <li><span class="mark">○</span><span>住所・メール・口座などが変わったらすぐ更新する<span class="why">届出事項の変更は遅れず提出（第2条）</span></span></li>
+    </ul>
+  </div>
+  <div class="box">
+    <h3>やらないこと</h3>
+    <ul class="check dont">
+      <li><span class="mark">×</span><span>「申し込んだら○○プレゼント」など、読者にお礼をつけて申し込みを頼む<span class="why">許可のないインセンティブ付与は禁止（第30条②）</span></span></li>
+      <li><span class="mark">×</span><span>報酬の高い広告を「人気ランキング1位」のように見せる<span class="why">うそ・誤解を招くランキングは違反例として明記</span></span></li>
+      <li><span class="mark">×</span><span>「本人申込NG」の広告に自分で申し込む<span class="why">広告ごとに可否が違うので、詳細ページで確認</span></span></li>
+      <li><span class="mark">×</span><span>管理画面の報酬額など、公開されていない情報をサイトやSNSに載せる<span class="why">非公開情報の公開は違反例として明記・守秘義務（第12条）</span></span></li>
+      <li><span class="mark">×</span><span>「もしも公式」「株式会社もしも」と誤解される書き方<span class="why">解除の理由になります（第14条⑫）</span></span></li>
+      <li><span class="mark">×</span><span>運営者情報にうその年齢・性別などを書く<span class="why">プロフィールの偽りは違反例として明記</span></span></li>
+      <li><span class="mark">×</span><span>検索広告（リスティング広告）を出す<span class="why">いまは使わない方針。使う場合は広告ごとの出稿条件を必ず読む（下に要点）</span></span></li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>お金の受け取り</h2>
+  <div class="box tbl">
+    <table>
+      <tr><th>支払い日</th><td>月末締め・<strong>翌々月末</strong>に振込（休日なら前の営業日）。例：12月に確定した報酬 → 2月末</td></tr>
+      <tr><th>確定のタイミング</th><td>広告主が「承認」した月が確定月。承認は原則、申し込みから30日以内</td></tr>
+      <tr><th>最低支払額</th><td>1,000円。未満の月は、累計1,000円以上になるまで繰り越し</td></tr>
+      <tr><th>振込手数料</th><td>もしもが負担（無料）</td></tr>
+      <tr><th>口座</th><td><strong>自分名義・日本国内</strong>の口座だけ。違うと支払いが止まり、翌々年の12月31日を過ぎると消滅</td></tr>
+      <tr><th>W報酬</th><td>報酬の<strong>12%</strong>が上乗せ（Amazon・楽天グループの広告は対象外）</td></tr>
+      <tr><th>やめるとき</th><td>契約が終わると報酬を受け取る権利がなくなる。未払いが1,000円以上なら、終了から1か月以内に精算を請求できる</td></tr>
+      <tr><th>インボイス</th><td>登録番号、またはない場合は「免税事業者である」ことの申告が必要（第2条）</td></tr>
+    </table>
+  </div>
+  <div class="box warn">
+    <p><strong>注意：</strong>口座を登録していない・内容に誤りがあると、支払いが遅れても補償されません。登録が済んだら口座を確認しておきましょう。</p>
+  </div>
+</section>
+
+<section>
+  <h2>利用規約の禁止事項（やさしく言いかえ）</h2>
+  <div class="box">
+    <ul class="plain">
+      <li>法律違反、公序良俗に反すること、読者を誤解させること</li>
+      <li>他人の権利（著作権・名誉・プライバシー）を侵害すること、悪口</li>
+      <li>もしもで知ったメールアドレスに、勝手に宣伝メールを送ること</li>
+      <li>もしもと同じような事業をすること、サービスの運営を邪魔すること</li>
+      <li>データの改ざん、不正アクセス、ウイルスなどを送ること</li>
+      <li>広告リンク・素材を勝手に変えること</li>
+      <li>自作自演や、頼み込み・お礼つきの申し込みで報酬を得ること</li>
+      <li>提携していないサイトに広告を貼ること</li>
+      <li>中身のないサイト、パスワードがないと見られないサイト、情報商材のような誤解を招くサイトの運営</li>
+    </ul>
+    <p class="src">違反すると、提携解除・報酬の停止・アカウント停止になることがあります（第14条・第20条・第30条）。違反かどうかはもしもが判断し、調査の資料を求められたら出す必要があります。</p>
+  </div>
+</section>
+
+<section>
+  <h2>よくある違反例（公式の事例集より）</h2>
+  <div class="box">
+    <ul class="plain">
+      <li><strong>引用のルール違反</strong>：自分の文章が主で引用は従、引用部分をはっきり分ける、変えない、出典を書く。この4つを守る</li>
+      <li><strong>動画</strong>：公式以外の動画の埋め込みはNG。公式でも、動画だけで中身のない記事はNG</li>
+      <li><strong>写真</strong>：写っている人の許可がない写真、有名人の写真で人を引きつけるのはNG</li>
+      <li><strong>違法サイトへの誘導</strong>、ドラマ・マンガなどの全文書き起こし</li>
+      <li><strong>うその・誤解を招くランキング</strong>、<strong>プロフィールの偽り</strong></li>
+      <li><strong>本人申込NG</strong>の広告への自分での申し込み、<strong>非公開情報</strong>の公開</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>検索広告・SNS広告を出す場合（いまは対象外）</h2>
+  <div class="box">
+    <ul class="plain">
+      <li>広告主の社名・サービス名や、それに似た言葉（ひらがな・打ち間違いも）でキーワードを買わない</li>
+      <li>「公式」「公認」「提携」など、広告主のサイトと誤解される言葉を使わない。公式の素材も無断で使わない</li>
+      <li>検索広告からアフィリエイトリンクに直接飛ばさない。中身の薄い中継ページにしない</li>
+      <li>広告ごとの「出稿条件」を読む。違反すると成果の没収・提携解除・アカウント停止もありえる</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>まだ読めていないもの</h2>
+  <div class="box todo">
+    <p>次の3つは、会員ログインが必要なページにあるため、まだ読めていません。登録画面のリンクから本文をコピーしてチャットに貼ってもらえれば、このページに追加します。</p>
+    <ul class="plain">
+      <li>メディア登録審査ガイドライン</li>
+      <li>メディア運営ガイドライン</li>
+      <li>SNS・YouTube掲載におけるガイドライン</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="src">
+  <p>出典（すべて株式会社もしも）：
+    <a href="https://af.moshimo.com/af/www/terms/shop">もしもアフィリエイトメディア利用規約</a> ／
+    <a href="https://af.moshimo.com/af/www/about/unfaircase">よくある不正/違反事例</a> ／
+    <a href="https://af.moshimo.com/af/www/about/reward">W報酬制度</a> ／
+    <a href="https://af.moshimo.com/af/www/about/ppcGuideline">検索連動型広告、ディスプレイ広告／SNS広告 出稿ガイドライン</a> ／
+    <a href="https://af.moshimo.com/af/www/about/safetyAffiliate">安心のアフィリエイトネットワーク作り</a>
+  </p>
+  <p>このページは読みやすく言いかえた要約です。判断に迷うときは原文を確認してください。</p>
+</footer>
+</div>
