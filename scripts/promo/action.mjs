@@ -53,7 +53,8 @@ if (cmd === 'draft') {
   for (let n = 0; n < count; n++) {
     const d = JSON.parse(node(['draft', kind], kind === 'article' ? { PROMO_USED: used.join(',') } : {}));
     const label = kind === 'x' ? 'promo:x' : 'promo:article';
-    if (!auto) {
+    // ブログ記事は自動モードでも必ず人が確認してから（もしもの規約：AI で作った記事は校正・事実確認が必要）
+    if (!auto || kind === 'article') {
       console.log(createIssue(`${kind === 'x' ? 'SNS' : '記事'}：${d.title.slice(0, 60)}`, d.body, label));
     } else if (kind === 'x') {
       // Bluesky（と、API を設定していれば 𝕏）は自動投稿。𝕏 の API がなければタップ投稿用の Issue を作る
