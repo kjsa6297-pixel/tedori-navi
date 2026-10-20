@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { oauthSignature, hatenaEntry } from '../scripts/promo/publish.mjs';
-import { xPost, xWeight, article, ARTICLE_KEYS, articleByKey, nextArticle, categoriesFor } from '../scripts/promo/content.mjs';
+import { xPost, xWeight, article, ARTICLE_KEYS, articleByKey, nextArticle, categoriesFor, adLink, disclose } from '../scripts/promo/content.mjs';
 import { issueBody, extract } from '../scripts/promo/issue.mjs';
 
 test('OAuth 1.0a 署名が 𝕏 公式ドキュメントの例と一致する', () => {
@@ -110,4 +110,14 @@ test('記事の Issue には記録用の印が付き、投稿内容には含ま�
 test('はてなブログのカテゴリをタイトルから付ける', () => {
   assert.deepEqual(categoriesFor('【2026年】ふるさと納税の上限はいくら？'), ['手取り', 'お金', 'ふるさと納税']);
   assert.ok(categoriesFor('年収500万円の手取りは月32万円【2026年】').includes('年収別'));
+});
+
+test('アフィリエイトは URL があるときだけ「PR」つきで出し、記事の冒頭に広告の表示を入れる', () => {
+  const aff = { furusato: { url: '//af.moshimo.com/af/c/click?a_id=1', label: '返礼品を探す' } };
+  assert.equal(adLink('furusato', { furusato: { url: '', label: 'x' } }, true), '');
+  assert.equal(adLink('furusato', aff, false), '', 'はてなブログが未提携の間は出さない');
+  const l = adLink('furusato', aff, true);
+  assert.ok(l.includes('[返礼品を探す](//af.moshimo.com/af/c/click?a_id=1)**（PR）'), 'リンクは改変しない');
+  assert.match(disclose(`本文${l}`), /^※この記事にはプロモーション（広告）が含まれます。/);
+  assert.equal(disclose('本文'), '本文');
 });
