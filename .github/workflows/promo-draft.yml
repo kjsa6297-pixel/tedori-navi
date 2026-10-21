@@ -1,11 +1,11 @@
 name: 宣伝の投稿案づくり
 
-# 毎日 12:15 JST に 𝕏 の投稿案、毎週月曜 7:05 JST にブログ記事の案を作る。
+# 毎日 12:15 JST に SNS の投稿案、毎週 月・水・金 7:05 JST にブログ記事の案を作る。
 # site.config.json の promo.auto が false の間は Issue で確認、true なら即投稿。
 on:
   schedule:
     - cron: '15 3 * * *'
-    - cron: '5 22 * * 0'
+    - cron: '5 22 * * 0,2,4'
   workflow_dispatch:
     inputs:
       kind:
@@ -13,6 +13,10 @@ on:
         type: choice
         options: [x, article]
         default: x
+      count:
+        description: 記事の本数（まとめて作るとき。最大10）
+        type: number
+        default: 1
 
 permissions:
   contents: read
@@ -34,7 +38,7 @@ jobs:
           INPUT_KIND: ${{ inputs.kind }}
         run: |
           if [ "$EVENT" = "workflow_dispatch" ]; then echo "kind=$INPUT_KIND" >> "$GITHUB_OUTPUT"
-          elif [ "$SCHEDULE" = "5 22 * * 0" ]; then echo "kind=article" >> "$GITHUB_OUTPUT"
+          elif [ "$SCHEDULE" = "5 22 * * 0,2,4" ]; then echo "kind=article" >> "$GITHUB_OUTPUT"
           else echo "kind=x" >> "$GITHUB_OUTPUT"; fi
       - name: 投稿案を作る（確認モードなら Issue、自動モードなら投稿）
         env:
@@ -49,4 +53,4 @@ jobs:
           HATENA_ID: ${{ secrets.HATENA_ID }}
           HATENA_BLOG_ID: ${{ secrets.HATENA_BLOG_ID }}
           HATENA_API_KEY: ${{ secrets.HATENA_API_KEY }}
-        run: node scripts/promo/action.mjs draft "${{ steps.kind.outputs.kind }}"
+        run: node scripts/promo/action.mjs draft "${{ steps.kind.outputs.kind }}" "${{ inputs.count || 1 }}"

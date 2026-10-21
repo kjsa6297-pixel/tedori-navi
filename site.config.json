@@ -28,6 +28,7 @@
   "operator": "手取りナビ編集部",
   "googleSiteVerification": "",
   "promo": {
-    "auto": false
+    "auto": false,
+    "blogAds": false
   }
 }
